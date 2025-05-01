@@ -36,18 +36,20 @@ export default function PaginaPrincipal() {
     <>
       <div className="max-w-md mx-auto mt-10 text-center">
         <h1 className="text-2xl font-bold mb-2">Bienvenido a Mi Lista de Tareas</h1>
-    <AnimacionBienvenida />
+        <AnimacionBienvenida />
         <p className="text-gray-600 text-sm mb-4">
           Organiza tus tareas por carpetas y fechas límite. Accede a tus pendientes desde cualquier dispositivo de forma segura.
         </p>
-
       </div>
+
       <LoginForm />
+
       {user && (
         <div className="relative">
           <p className="text-center text-sm text-gray-600 mb-2">
             Bienvenido, {user.displayName || user.email}
           </p>
+
           <Navigation
             mostrarCalendario={mostrarCalendario}
             onToggleCalendario={() => setMostrarCalendario(!mostrarCalendario)}
@@ -55,6 +57,7 @@ export default function PaginaPrincipal() {
             carpetaSeleccionada={carpetaSeleccionada}
             onSeleccionarCarpeta={setCarpetaSeleccionada}
           />
+
           {mostrarCalendario ? (
             <CalendarioTareas />
           ) : (
