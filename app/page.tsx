@@ -8,7 +8,8 @@ import CalendarioTareas from "../components/CalendarioTareas";
 import Navigation from "../components/Navigation";
 import LoginForm from "../components/LoginForm";
 import { useAuth } from "../components/AuthProvider";
-import AnimacionBienvenida from "../components/AnimacionBienvenida";
+import dynamic from "next/dynamic";
+const AnimacionBienvenida = dynamic(() => import("../components/AnimacionBienvenida"), { ssr: false });
 
 export default function PaginaPrincipal() {
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
