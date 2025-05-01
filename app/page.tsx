@@ -8,8 +8,7 @@ import CalendarioTareas from "../components/CalendarioTareas";
 import Navigation from "../components/Navigation";
 import LoginForm from "../components/LoginForm";
 import { useAuth } from "../components/AuthProvider";
-import Lottie from "lottie-react";
-import animacionTareas from "../public/animaciones/tareas-animacion.json";
+import AnimacionBienvenida from "../components/AnimacionBienvenida";
 
 export default function PaginaPrincipal() {
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
@@ -37,9 +36,7 @@ export default function PaginaPrincipal() {
     <>
       <div className="max-w-md mx-auto mt-10 text-center">
         <h1 className="text-2xl font-bold mb-2">Bienvenido a Mi Lista de Tareas</h1>
-        <div className="flex justify-center mb-4">
-          <Lottie animationData={animacionTareas} loop={true} style={{ height: 180 }} />
-        </div>
+    <AnimacionBienvenida />
         <p className="text-gray-600 text-sm mb-4">
           Organiza tus tareas por carpetas y fechas límite. Accede a tus pendientes desde cualquier dispositivo de forma segura.
         </p>
