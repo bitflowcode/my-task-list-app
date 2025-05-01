@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "../components/AuthProvider";
 
 type Tarea = {
   id: string;
@@ -26,6 +27,7 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
   const [carpetaEditada, setCarpetaEditada] = useState<string>(tarea.carpeta || "");
   const [mostrarInputNuevaCarpeta, setMostrarInputNuevaCarpeta] = useState(false);
   const [nuevaCarpeta, setNuevaCarpeta] = useState("");
+  const { user } = useAuth();
 
   const guardarEdicion = () => {
     if (onEditar && tituloEditado.trim() !== "") {
@@ -88,18 +90,20 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
                   onClick={async () => {
                     const nombre = nuevaCarpeta.trim();
                     if (nombre !== "") {
-                      setCarpetaEditada(nombre);
                       setNuevaCarpeta("");
                       setMostrarInputNuevaCarpeta(false);
-
                       try {
                         const existe = carpetas.includes(nombre);
                         if (!existe) {
                           const { addDoc, collection } = await import("firebase/firestore");
                           const { db } = await import("../lib/firebase");
-                          await addDoc(collection(db, "carpetas"), { nombre });
-                          onActualizarCarpetas();
+                          await addDoc(collection(db, "carpetas"), {
+                            nombre,
+                            userId: user?.uid,
+                          });
+                          await onActualizarCarpetas();
                         }
+                        setCarpetaEditada(nombre);
                       } catch (error) {
                         console.error("Error al guardar carpeta en Firestore:", error);
                       }

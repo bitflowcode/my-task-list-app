@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { useAuth } from "../components/AuthProvider";
+
 type Props = {
   mostrarCalendario: boolean;
   onToggleCalendario: () => void;
@@ -7,8 +10,6 @@ type Props = {
   carpetaSeleccionada: string;
   onSeleccionarCarpeta: (nombre: string) => void;
 };
-
-import { useState } from "react";
 
 export default function Navigation({
   mostrarCalendario,
@@ -18,6 +19,7 @@ export default function Navigation({
   onSeleccionarCarpeta,
 }: Props) {
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
+  const { user, loginWithGoogle, logout } = useAuth();
   return (
     <nav className="w-full flex justify-center p-4 border-b border-gray-200 mb-4">
       <div className="relative flex gap-6">
@@ -69,6 +71,25 @@ export default function Navigation({
             </div>
           )}
         </div>
+      </div>
+      <div className="ml-6 flex items-center">
+        {user ? (
+          <button
+            onClick={logout}
+            className="text-sm text-gray-600 hover:text-red-600"
+            title={`Cerrar sesión (${user.displayName || user.email})`}
+          >
+            Cerrar sesión
+          </button>
+        ) : (
+          <button
+            onClick={loginWithGoogle}
+            className="text-sm text-gray-600 hover:text-green-600"
+            title="Iniciar sesión con Google"
+          >
+            Iniciar sesión
+          </button>
+        )}
       </div>
     </nav>
   );

@@ -11,8 +11,10 @@ import {
   query,
   orderBy,
   updateDoc,
-  getDocs
+  getDocs,
+  where
 } from "firebase/firestore";
+import { useAuth } from "../components/AuthProvider";
 import FormularioTarea from "./FormularioTarea";
 import TareaItem from "./TareaItem";
 import ListaTareasCompletadas from "./ListaTareasCompletadas";
@@ -30,10 +32,20 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
   const [mostrarModal, setMostrarModal] = useState(false);
   const [carpetas, setCarpetas] = useState<string[]>([]);
 
+  const { user } = useAuth();
+
   const actualizarCarpetas = async () => {
     const predeterminadas = ["Trabajo", "Personal", "Otros"];
-    const snapshot = await getDocs(collection(db, "carpetas"));
+
+    if (!user) {
+      setCarpetas(predeterminadas);
+      return;
+    }
+
+    const q = query(collection(db, "carpetas"), where("userId", "==", user.uid));
+    const snapshot = await getDocs(q);
     const personalizadas = snapshot.docs.map((doc) => doc.data().nombre as string);
+
     setCarpetas(Array.from(new Set([...predeterminadas, ...personalizadas])));
   };
 
