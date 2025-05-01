@@ -84,6 +84,7 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
       titulo,
       fechaLimite: fechaLimite || null,
       carpeta: carpeta || null,
+      userId: user?.uid || null,
     });
     actualizarCarpetas();
   };
@@ -126,6 +127,7 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
     await addDoc(collection(db, "tareas"), {
       titulo: tarea.titulo,
       fechaLimite: null,
+      userId: user?.uid || null,
     });
     await deleteDoc(doc(db, "completadas", id));
     actualizarCarpetas();

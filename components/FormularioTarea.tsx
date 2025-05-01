@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { collection, getDocs, addDoc } from "firebase/firestore";
+import { useAuth } from "./AuthProvider";
 
 type Props = {
   onAgregar: (titulo: string, fechaLimite: string | null, carpeta?: string) => void;
 };
 
 export default function FormularioTarea({ onAgregar }: Props) {
+  const { user } = useAuth();
   const [nuevaTarea, setNuevaTarea] = useState("");
   const [fechaLimite, setFechaLimite] = useState<string | null>(null);
   const [carpeta, setCarpeta] = useState("");
@@ -52,7 +54,7 @@ export default function FormularioTarea({ onAgregar }: Props) {
     const nombre = nuevaCarpeta.trim();
 
     if (!carpetas.includes(nombre)) {
-      await addDoc(collection(db, "carpetas"), { nombre });
+      await addDoc(collection(db, "carpetas"), { nombre, userId: user?.uid || null });
       setCarpetas([...carpetas, nombre]);
     }
 
