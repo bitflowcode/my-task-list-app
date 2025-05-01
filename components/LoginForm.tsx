@@ -21,7 +21,7 @@ export default function LoginForm() {
       } else {
         await registerWithEmail(email, password);
       }
-    } catch (err) {
+    } catch {
       setError("Error al iniciar sesión o registrarse.");
     }
   };

@@ -76,7 +76,7 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
       unsubTareas();
       unsubCompletadas();
     };
-  }, []);
+  }, [user, actualizarCarpetas]);
 
   const agregarTarea = async (titulo: string, fechaLimite: string | null, carpeta?: string) => {
     if (titulo.trim() === "") return;
