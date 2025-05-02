@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { db } from "../lib/firebase";
 import {
   collection,
@@ -34,7 +34,7 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
 
   const { user } = useAuth();
 
-  const actualizarCarpetas = async () => {
+  const actualizarCarpetas = useCallback(async () => {
     const predeterminadas = ["Trabajo", "Personal", "Otros"];
 
     if (!user) {
@@ -47,10 +47,14 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
     const personalizadas = snapshot.docs.map((doc) => doc.data().nombre as string);
 
     setCarpetas(Array.from(new Set([...predeterminadas, ...personalizadas])));
-  };
+  }, [user]);
 
   useEffect(() => {
-    const qTareas = query(collection(db, "tareas"), orderBy("titulo"));
+    const qTareas = query(
+      collection(db, "tareas"),
+      where("userId", "==", user?.uid),
+      orderBy("titulo")
+    );
     const unsubTareas = onSnapshot(qTareas, (snapshot) => {
       const nuevasTareas = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -61,7 +65,11 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
       setTareas(nuevasTareas);
     });
 
-    const qCompletadas = query(collection(db, "completadas"), orderBy("titulo"));
+    const qCompletadas = query(
+      collection(db, "completadas"),
+      where("userId", "==", user?.uid),
+      orderBy("titulo")
+    );
     const unsubCompletadas = onSnapshot(qCompletadas, (snapshot) => {
       const tareasHechas = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -93,7 +101,7 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
     const tarea = tareas.find((t) => t.id === id);
     if (!tarea) return;
 
-    await addDoc(collection(db, "completadas"), { titulo: tarea.titulo });
+    await addDoc(collection(db, "completadas"), { titulo: tarea.titulo, userId: user?.uid || null });
     await deleteDoc(doc(db, "tareas", id));
     actualizarCarpetas();
   };

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
 import { useAuth } from "./AuthProvider";
 
 type Props = {
@@ -21,7 +21,8 @@ export default function FormularioTarea({ onAgregar }: Props) {
   useEffect(() => {
     const obtenerCarpetas = async () => {
       const carpetasPredeterminadas = ["Trabajo", "Personal", "Otros"];
-      const querySnapshot = await getDocs(collection(db, "carpetas"));
+      const q = query(collection(db, "carpetas"), where("userId", "==", user?.uid));
+      const querySnapshot = await getDocs(q);
       const nombres = querySnapshot.docs.map((doc) => doc.data().nombre as string);
       const combinadas = Array.from(new Set([...carpetasPredeterminadas, ...nombres]));
       setCarpetas(combinadas);
