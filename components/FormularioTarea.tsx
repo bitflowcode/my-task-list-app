@@ -56,7 +56,11 @@ export default function FormularioTarea({ onAgregar }: Props) {
     const nombre = nuevaCarpeta.trim();
 
     if (!carpetas.includes(nombre) && user?.uid) {
-      await addDoc(collection(db, "carpetas"), { nombre, userId: user.uid });
+      await addDoc(collection(db, "carpetas"), {
+        nombre,
+        userId: user.uid,
+        createdAt: new Date()
+      });
       setCarpetas([...carpetas, nombre]);
     }
 
