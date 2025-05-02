@@ -28,9 +28,10 @@ export default function FormularioTarea({ onAgregar }: Props) {
       setCarpetas(combinadas);
     };
     obtenerCarpetas();
-  }, []);
+  }, [user]);
 
   const agregar = () => {
+    if (!user) return;
     if (nuevaTarea.trim() === "") return;
     onAgregar(nuevaTarea, fechaLimite, carpeta);
     setNuevaTarea("");
