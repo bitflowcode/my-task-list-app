@@ -88,11 +88,12 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
 
   const agregarTarea = async (titulo: string, fechaLimite: string | null, carpeta?: string) => {
     if (titulo.trim() === "") return;
+    if (!user?.uid) return;
     await addDoc(collection(db, "tareas"), {
       titulo,
       fechaLimite: fechaLimite || null,
       carpeta: carpeta || null,
-      userId: user?.uid || null,
+      userId: user.uid,
     });
     actualizarCarpetas();
   };

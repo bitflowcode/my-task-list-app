@@ -51,11 +51,12 @@ export default function FormularioTarea({ onAgregar }: Props) {
   };
 
   const confirmarNuevaCarpeta = async () => {
+    if (!user?.uid) return;
     if (nuevaCarpeta.trim() === "") return;
     const nombre = nuevaCarpeta.trim();
 
-    if (!carpetas.includes(nombre)) {
-      await addDoc(collection(db, "carpetas"), { nombre, userId: user?.uid || null });
+    if (!carpetas.includes(nombre) && user?.uid) {
+      await addDoc(collection(db, "carpetas"), { nombre, userId: user.uid });
       setCarpetas([...carpetas, nombre]);
     }
 
