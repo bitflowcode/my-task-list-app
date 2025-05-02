@@ -113,11 +113,14 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
     nuevaFecha?: string | null,
     nuevaCarpeta?: string | null
   ) => {
+    if (!user?.uid) return;
+
     const ref = doc(db, "tareas", id);
     await updateDoc(ref, {
       titulo: nuevoTitulo,
       fechaLimite: nuevaFecha || null,
       carpeta: nuevaCarpeta || null,
+      userId: user.uid,
     });
     actualizarCarpetas();
   };
