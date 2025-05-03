@@ -35,18 +35,26 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
   const { user } = useAuth();
 
   const actualizarCarpetas = useCallback(async () => {
-    const predeterminadas = ["Trabajo", "Personal", "Otros"];
-
     if (!user) {
-      setCarpetas(predeterminadas);
+      setCarpetas([]);
       return;
     }
 
-    const q = query(collection(db, "carpetas"), where("userId", "==", user.uid));
-    const snapshot = await getDocs(q);
-    const personalizadas = snapshot.docs.map((doc) => doc.data().nombre as string);
+    try {
+      // Obtener solo las carpetas que tienen tareas asignadas
+      const qTareas = query(collection(db, "tareas"), where("userId", "==", user.uid));
+      const snapshotTareas = await getDocs(qTareas);
+      const carpetasDeTareas = snapshotTareas.docs
+        .map((doc) => doc.data().carpeta)
+        .filter((carpeta): carpeta is string => carpeta !== null && carpeta !== undefined);
 
-    setCarpetas(Array.from(new Set([...predeterminadas, ...personalizadas])));
+      // Obtener carpetas únicas que tienen tareas asignadas
+      const carpetasUnicas = Array.from(new Set(carpetasDeTareas));
+      setCarpetas(carpetasUnicas);
+    } catch (error) {
+      console.error("Error al cargar carpetas:", error);
+      setCarpetas([]);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -68,12 +76,14 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
     const qCompletadas = query(
       collection(db, "completadas"),
       where("userId", "==", user?.uid),
-      orderBy("titulo")
+      orderBy("fechaCompletada", "desc")
     );
     const unsubCompletadas = onSnapshot(qCompletadas, (snapshot) => {
       const tareasHechas = snapshot.docs.map((doc) => ({
         id: doc.id,
         titulo: doc.data().titulo,
+        carpeta: doc.data().carpeta,
+        fechaCompletada: doc.data().fechaCompletada,
       }));
       setCompletadas(tareasHechas);
     });
@@ -100,11 +110,25 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
 
   const completarTarea = async (id: string) => {
     const tarea = tareas.find((t) => t.id === id);
-    if (!tarea) return;
+    if (!tarea || !user?.uid) return;
 
-    await addDoc(collection(db, "completadas"), { titulo: tarea.titulo, userId: user?.uid || null });
-    await deleteDoc(doc(db, "tareas", id));
-    actualizarCarpetas();
+    try {
+      // Primero agregamos la tarea completada
+      await addDoc(collection(db, "completadas"), {
+        titulo: tarea.titulo,
+        userId: user.uid,
+        carpeta: tarea.carpeta,
+        fechaCompletada: new Date().toISOString()
+      });
+      
+      // Luego eliminamos la tarea pendiente
+      await deleteDoc(doc(db, "tareas", id));
+      
+      // Actualizamos las carpetas
+      await actualizarCarpetas();
+    } catch (error) {
+      console.error("Error al completar tarea:", error);
+    }
   };
 
   const editarTarea = async (
@@ -134,15 +158,20 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
 
   const reenviarATareasPendientes = async (id: string) => {
     const tarea = completadas.find((t) => t.id === id);
-    if (!tarea) return;
+    if (!tarea || !user?.uid) return;
 
-    await addDoc(collection(db, "tareas"), {
-      titulo: tarea.titulo,
-      fechaLimite: null,
-      userId: user?.uid || null,
-    });
-    await deleteDoc(doc(db, "completadas", id));
-    actualizarCarpetas();
+    try {
+      await addDoc(collection(db, "tareas"), {
+        titulo: tarea.titulo,
+        fechaLimite: null,
+        carpeta: tarea.carpeta,
+        userId: user.uid,
+      });
+      await deleteDoc(doc(db, "completadas", id));
+      await actualizarCarpetas();
+    } catch (error) {
+      console.error("Error al reactivar tarea:", error);
+    }
   };
 
   const borrarTareaCompletada = async (id: string) => {
