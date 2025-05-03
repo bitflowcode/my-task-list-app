@@ -179,9 +179,7 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
           />
         ))}
       </ul>
-      <p className="text-xs text-gray-500 text-center mt-4">
-        UID actual: {user?.uid || "No autenticado"}
-      </p>
+
       <ListaTareasCompletadas
         tareas={completadas}
         onEditar={editarTareaCompletada}
