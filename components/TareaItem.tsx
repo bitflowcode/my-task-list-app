@@ -29,30 +29,34 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
   const [nuevaCarpeta, setNuevaCarpeta] = useState("");
   const { user } = useAuth();
 
+  const agregarNuevaCarpeta = async (nombre: string) => {
+    if (nombre.trim() === "") return;
+    
+    try {
+      const { addDoc, collection } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+      await addDoc(collection(db, "carpetas"), {
+        nombre,
+        userId: user?.uid,
+      });
+      
+      // Actualizar la carpeta seleccionada
+      setCarpetaEditada(nombre);
+      setNuevaCarpeta("");
+      setMostrarInputNuevaCarpeta(false);
+      
+      // Notificar al componente padre para actualizar la lista de carpetas
+      await onActualizarCarpetas();
+    } catch (error) {
+      console.error("Error al guardar carpeta en Firestore:", error);
+    }
+  };
+
   const guardarEdicion = async () => {
     if (onEditar && tituloEditado.trim() !== "") {
       console.log("Guardando edición:", { id: tarea.id, tituloEditado, fechaEditada, carpetaEditada });
-      
-      // Si se seleccionó una nueva carpeta, guardarla primero
-      if (carpetaEditada && !carpetas.includes(carpetaEditada)) {
-        try {
-          const { addDoc, collection } = await import("firebase/firestore");
-          const { db } = await import("../lib/firebase");
-          await addDoc(collection(db, "carpetas"), {
-            nombre: carpetaEditada,
-            userId: user?.uid,
-          });
-        } catch (error) {
-          console.error("Error al guardar carpeta en Firestore:", error);
-        }
-      }
-
-      // Guardar la edición de la tarea
       await onEditar(tarea.id, tituloEditado, fechaEditada, carpetaEditada);
-      
-      // Actualizar la lista de carpetas
       await onActualizarCarpetas();
-      
       setModoEdicion(false);
     }
   };
@@ -105,30 +109,14 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
                   className="w-full border px-2 py-1 text-sm"
                   value={nuevaCarpeta}
                   onChange={(e) => setNuevaCarpeta(e.target.value)}
-                />
-                <button
-                  onClick={async () => {
-                    const nombre = nuevaCarpeta.trim();
-                    if (nombre !== "") {
-                      setNuevaCarpeta("");
-                      setMostrarInputNuevaCarpeta(false);
-                      try {
-                        const existe = carpetas.includes(nombre);
-                        if (!existe) {
-                          const { addDoc, collection } = await import("firebase/firestore");
-                          const { db } = await import("../lib/firebase");
-                          await addDoc(collection(db, "carpetas"), {
-                            nombre,
-                            userId: user?.uid,
-                          });
-                          await onActualizarCarpetas();
-                        }
-                        setCarpetaEditada(nombre);
-                      } catch (error) {
-                        console.error("Error al guardar carpeta en Firestore:", error);
-                      }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      agregarNuevaCarpeta(nuevaCarpeta);
                     }
                   }}
+                />
+                <button
+                  onClick={() => agregarNuevaCarpeta(nuevaCarpeta)}
                   className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600"
                 >
                   Añadir

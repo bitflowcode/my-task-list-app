@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
 
 type Props = {
@@ -20,6 +20,11 @@ export default function Navigation({
 }: Props) {
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const { user, loginWithGoogle, logout } = useAuth();
+
+  useEffect(() => {
+    setMostrarDropdown(false);
+  }, [carpetas]);
+
   return (
     <nav className="w-full flex justify-center p-4 border-b border-gray-200 mb-4">
       <div className="relative flex gap-6">
