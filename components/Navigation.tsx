@@ -45,8 +45,19 @@ export default function Navigation({
           </button>
           {mostrarDropdown && (
             <div
+              ref={(el) => {
+                if (el) {
+                  const handleClickOutside = (event: MouseEvent) => {
+                    if (!el.contains(event.target as Node)) {
+                      setMostrarDropdown(false);
+                      document.removeEventListener("mousedown", handleClickOutside);
+                    }
+                  };
+                  document.addEventListener("mousedown", handleClickOutside);
+                }
+              }}
               key={carpetas.join(",")}
-              className="absolute right-0 mt-2 bg-white border rounded shadow-md text-sm z-50 w-[clamp(200px,50vw,360px)]"
+              className="absolute left-1/2 -translate-x-1/2 mt-2 bg-white border rounded shadow-md text-sm z-50 w-[clamp(200px,50vw,360px)]"
             >
               <div
                 onClick={() => {
