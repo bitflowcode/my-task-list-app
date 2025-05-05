@@ -150,14 +150,18 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
   ) => {
     if (!user?.uid) return;
 
-    const ref = doc(db, "tareas", id);
-    await updateDoc(ref, {
-      titulo: nuevoTitulo,
-      fechaLimite: nuevaFecha || null,
-      carpeta: nuevaCarpeta || null,
-      userId: user.uid,
-    });
-    actualizarCarpetas();
+    try {
+      const ref = doc(db, "tareas", id);
+      await updateDoc(ref, {
+        titulo: nuevoTitulo,
+        fechaLimite: nuevaFecha || null,
+        carpeta: nuevaCarpeta || null,
+        userId: user.uid,
+      });
+      await actualizarCarpetas();
+    } catch (error) {
+      console.error("Error al editar tarea:", error);
+    }
   };
 
   const editarTareaCompletada = async (id: string, nuevoTitulo: string) => {
