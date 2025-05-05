@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { db } from "../lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import ListaDeTareas from "../components/TaskList";
 import CalendarioTareas from "../components/CalendarioTareas";
 import Navigation from "../components/Navigation";
@@ -19,19 +19,41 @@ export default function PaginaPrincipal() {
 
   useEffect(() => {
     const cargarCarpetasDesdeFirestore = async () => {
-      const snapshot = await getDocs(collection(db, "tareas"));
-      const carpetasSet = new Set<string>();
+      if (!user) {
+        setCarpetasConTareas([]);
+        return;
+      }
 
-      snapshot.docs.forEach((doc) => {
-        const carpeta = doc.data().carpeta;
-        if (carpeta) carpetasSet.add(carpeta);
-      });
+      try {
+        // Obtener carpetas de tareas pendientes
+        const qTareas = query(collection(db, "tareas"), where("userId", "==", user.uid));
+        const snapshotTareas = await getDocs(qTareas);
+        const carpetasDeTareas = snapshotTareas.docs
+          .map((doc) => doc.data().carpeta)
+          .filter((carpeta): carpeta is string => carpeta !== null && carpeta !== undefined);
 
-      setCarpetasConTareas(Array.from(carpetasSet));
+        // Obtener carpetas de tareas completadas
+        const qCompletadas = query(collection(db, "completadas"), where("userId", "==", user.uid));
+        const snapshotCompletadas = await getDocs(qCompletadas);
+        const carpetasDeCompletadas = snapshotCompletadas.docs
+          .map((doc) => doc.data().carpeta)
+          .filter((carpeta): carpeta is string => carpeta !== null && carpeta !== undefined);
+
+        // Combinar y obtener carpetas únicas
+        const todasLasCarpetas = Array.from(new Set([
+          ...carpetasDeTareas,
+          ...carpetasDeCompletadas
+        ]));
+
+        setCarpetasConTareas(todasLasCarpetas);
+      } catch (error) {
+        console.error("Error al cargar carpetas:", error);
+        setCarpetasConTareas([]);
+      }
     };
 
     cargarCarpetasDesdeFirestore();
-  }, []);
+  }, [user]);
 
   return (
     <>
