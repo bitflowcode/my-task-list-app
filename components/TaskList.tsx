@@ -41,16 +41,27 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
     }
 
     try {
-      // Obtener solo las carpetas que tienen tareas asignadas
+      // Obtener carpetas de tareas pendientes
       const qTareas = query(collection(db, "tareas"), where("userId", "==", user.uid));
       const snapshotTareas = await getDocs(qTareas);
       const carpetasDeTareas = snapshotTareas.docs
         .map((doc) => doc.data().carpeta)
         .filter((carpeta): carpeta is string => carpeta !== null && carpeta !== undefined);
 
-      // Obtener carpetas únicas que tienen tareas asignadas
-      const carpetasUnicas = Array.from(new Set(carpetasDeTareas));
-      setCarpetas(carpetasUnicas);
+      // Obtener carpetas de tareas completadas
+      const qCompletadas = query(collection(db, "completadas"), where("userId", "==", user.uid));
+      const snapshotCompletadas = await getDocs(qCompletadas);
+      const carpetasDeCompletadas = snapshotCompletadas.docs
+        .map((doc) => doc.data().carpeta)
+        .filter((carpeta): carpeta is string => carpeta !== null && carpeta !== undefined);
+
+      // Combinar y obtener carpetas únicas
+      const todasLasCarpetas = Array.from(new Set([
+        ...carpetasDeTareas,
+        ...carpetasDeCompletadas
+      ]));
+
+      setCarpetas(todasLasCarpetas);
     } catch (error) {
       console.error("Error al cargar carpetas:", error);
       setCarpetas([]);
