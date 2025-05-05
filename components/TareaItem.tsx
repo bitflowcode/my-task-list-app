@@ -29,10 +29,11 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
   const [nuevaCarpeta, setNuevaCarpeta] = useState("");
   const { user } = useAuth();
 
-  const guardarEdicion = () => {
+  const guardarEdicion = async () => {
     if (onEditar && tituloEditado.trim() !== "") {
       console.log("Guardando edición:", { id: tarea.id, tituloEditado, fechaEditada, carpetaEditada });
-      onEditar(tarea.id, tituloEditado, fechaEditada, carpetaEditada);
+      await onEditar(tarea.id, tituloEditado, fechaEditada, carpetaEditada);
+      await onActualizarCarpetas();
       setModoEdicion(false);
     }
   };

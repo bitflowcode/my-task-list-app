@@ -158,7 +158,6 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
         carpeta: nuevaCarpeta || null,
         userId: user.uid,
       });
-      await actualizarCarpetas();
     } catch (error) {
       console.error("Error al editar tarea:", error);
     }
