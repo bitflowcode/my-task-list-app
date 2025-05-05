@@ -32,8 +32,27 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
   const guardarEdicion = async () => {
     if (onEditar && tituloEditado.trim() !== "") {
       console.log("Guardando edición:", { id: tarea.id, tituloEditado, fechaEditada, carpetaEditada });
+      
+      // Si se seleccionó una nueva carpeta, guardarla primero
+      if (carpetaEditada && !carpetas.includes(carpetaEditada)) {
+        try {
+          const { addDoc, collection } = await import("firebase/firestore");
+          const { db } = await import("../lib/firebase");
+          await addDoc(collection(db, "carpetas"), {
+            nombre: carpetaEditada,
+            userId: user?.uid,
+          });
+        } catch (error) {
+          console.error("Error al guardar carpeta en Firestore:", error);
+        }
+      }
+
+      // Guardar la edición de la tarea
       await onEditar(tarea.id, tituloEditado, fechaEditada, carpetaEditada);
+      
+      // Actualizar la lista de carpetas
       await onActualizarCarpetas();
+      
       setModoEdicion(false);
     }
   };

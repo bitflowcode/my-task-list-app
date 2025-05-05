@@ -41,26 +41,43 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
     }
 
     try {
+      console.log("Iniciando actualización de carpetas...");
+      
       // Obtener carpetas de tareas pendientes
       const qTareas = query(collection(db, "tareas"), where("userId", "==", user.uid));
       const snapshotTareas = await getDocs(qTareas);
       const carpetasDeTareas = snapshotTareas.docs
         .map((doc) => doc.data().carpeta)
-        .filter((carpeta): carpeta is string => carpeta !== null && carpeta !== undefined);
+        .filter((carpeta): carpeta is string => carpeta !== null && carpeta !== undefined && carpeta !== "");
+      
+      console.log("Carpetas de tareas pendientes:", carpetasDeTareas);
 
       // Obtener carpetas de tareas completadas
       const qCompletadas = query(collection(db, "completadas"), where("userId", "==", user.uid));
       const snapshotCompletadas = await getDocs(qCompletadas);
       const carpetasDeCompletadas = snapshotCompletadas.docs
         .map((doc) => doc.data().carpeta)
-        .filter((carpeta): carpeta is string => carpeta !== null && carpeta !== undefined);
+        .filter((carpeta): carpeta is string => carpeta !== null && carpeta !== undefined && carpeta !== "");
+      
+      console.log("Carpetas de tareas completadas:", carpetasDeCompletadas);
 
-      // Combinar y obtener carpetas únicas
+      // Obtener carpetas de la colección carpetas
+      const qCarpetas = query(collection(db, "carpetas"), where("userId", "==", user.uid));
+      const snapshotCarpetas = await getDocs(qCarpetas);
+      const carpetasGuardadas = snapshotCarpetas.docs
+        .map((doc) => doc.data().nombre)
+        .filter((nombre): nombre is string => nombre !== null && nombre !== undefined && nombre !== "");
+      
+      console.log("Carpetas guardadas:", carpetasGuardadas);
+
+      // Combinar todas las carpetas y obtener valores únicos
       const todasLasCarpetas = Array.from(new Set([
         ...carpetasDeTareas,
-        ...carpetasDeCompletadas
+        ...carpetasDeCompletadas,
+        ...carpetasGuardadas
       ]));
 
+      console.log("Todas las carpetas únicas:", todasLasCarpetas);
       setCarpetas(todasLasCarpetas);
     } catch (error) {
       console.error("Error al cargar carpetas:", error);
