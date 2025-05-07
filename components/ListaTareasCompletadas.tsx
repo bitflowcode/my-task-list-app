@@ -5,6 +5,9 @@ import { useState } from "react";
 type Tarea = {
   id: string;
   titulo: string;
+  fechaLimite?: string | null;
+  carpeta?: string;
+  fechaCompletada: string;
 };
 
 type Props = {

@@ -26,6 +26,10 @@ type Tarea = {
   carpeta?: string;
 };
 
+type TareaCompletada = Tarea & {
+  fechaCompletada: string;
+};
+
 type Props = {
   carpetaFiltrada: string;
   busqueda: string;
@@ -33,7 +37,7 @@ type Props = {
 
 export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
   const [tareas, setTareas] = useState<Tarea[]>([]);
-  const [completadas, setCompletadas] = useState<Tarea[]>([]);
+  const [completadas, setCompletadas] = useState<TareaCompletada[]>([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [carpetas, setCarpetas] = useState<string[]>([]);
 
@@ -116,6 +120,7 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
         id: doc.id,
         titulo: doc.data().titulo,
         carpeta: doc.data().carpeta,
+        fechaLimite: doc.data().fechaLimite,
         fechaCompletada: doc.data().fechaCompletada,
       }));
       setCompletadas(tareasHechas);
@@ -151,7 +156,7 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
         titulo: tarea.titulo,
         userId: user.uid,
         carpeta: tarea.carpeta,
-        fechaLimite: tarea.fechaLimite,
+        fechaLimite: tarea.fechaLimite || null,
         fechaCompletada: new Date().toISOString()
       });
       
