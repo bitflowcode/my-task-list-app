@@ -129,7 +129,11 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
             {index + 1}. {tarea.titulo}
             {tarea.fechaLimite && (
               <div className="text-xs text-gray-500">
-                Fecha límite: {tarea.fechaLimite}
+                Fecha límite: {new Date(tarea.fechaLimite).toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                })}
               </div>
             )}
             {tarea.carpeta && (

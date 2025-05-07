@@ -151,6 +151,7 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
         titulo: tarea.titulo,
         userId: user.uid,
         carpeta: tarea.carpeta,
+        fechaLimite: tarea.fechaLimite,
         fechaCompletada: new Date().toISOString()
       });
       
@@ -199,7 +200,7 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
     try {
       await addDoc(collection(db, "tareas"), {
         titulo: tarea.titulo,
-        fechaLimite: null,
+        fechaLimite: tarea.fechaLimite || null,
         carpeta: tarea.carpeta,
         userId: user.uid,
       });
