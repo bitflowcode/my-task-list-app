@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Función auxiliar para verificar el propietario
+    function isOwner(data) {
+      return request.auth != null && request.auth.uid == data.userId;
+    }
+
+    match /usuarios/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /tareas/{tareaId} {
+      allow read: if request.auth != null && (
+        isOwner(resource.data) ||
+        (request.method == 'create' && isOwner(request.resource.data))
+      );
+      allow create: if request.auth != null && isOwner(request.resource.data);
+      allow update, delete: if request.auth != null && isOwner(resource.data);
+    }
+
+    match /completadas/{tareaId} {
+      allow read: if request.auth != null && (
+        isOwner(resource.data) ||
+        (request.method == 'create' && isOwner(request.resource.data))
+      );
+      allow create: if request.auth != null && isOwner(request.resource.data);
+      allow update, delete: if request.auth != null && isOwner(resource.data);
+    }
+
+    match /carpetas/{carpetaId} {
+      allow read: if request.auth != null && (
+        isOwner(resource.data) ||
+        (request.method == 'create' && isOwner(request.resource.data))
+      );
+      allow create: if request.auth != null && isOwner(request.resource.data);
+      allow update, delete: if request.auth != null && isOwner(resource.data);
+    }
+  }
+} 
