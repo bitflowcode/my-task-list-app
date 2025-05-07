@@ -54,6 +54,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const userDoc = await getDoc(doc(db, "usuarios", uid));
     if (userDoc.exists()) {
       setUserProfile(userDoc.data() as UserProfile);
+    } else if (user) {
+      await createUserProfile(
+        user.uid,
+        user.email || "",
+        user.displayName || user.email || ""
+      );
     }
   };
 
