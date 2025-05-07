@@ -28,7 +28,7 @@ export default function LoginForm() {
         setMensaje("Se ha enviado un correo con instrucciones para recuperar tu contraseña.");
         setModo("login");
       }
-    } catch (error) {
+    } catch {
       setError("Error al iniciar sesión o registrarse.");
     }
   };
