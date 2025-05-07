@@ -26,7 +26,12 @@ type Tarea = {
   carpeta?: string;
 };
 
-export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: string }) {
+type Props = {
+  carpetaFiltrada: string;
+  busqueda: string;
+};
+
+export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [completadas, setCompletadas] = useState<Tarea[]>([]);
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -215,13 +220,24 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
     actualizarCarpetas();
   };
 
-  const tareasFiltradas = carpetaFiltrada
-    ? tareas.filter((t) => t.carpeta === carpetaFiltrada)
-    : tareas;
+  const tareasFiltradas = tareas
+    .filter((t) => !carpetaFiltrada || t.carpeta === carpetaFiltrada)
+    .filter((t) => 
+      !busqueda || 
+      t.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
+      (t.carpeta && t.carpeta.toLowerCase().includes(busqueda.toLowerCase()))
+    );
+
+  const tareasCompletadasFiltradas = completadas
+    .filter((t) => !carpetaFiltrada || t.carpeta === carpetaFiltrada)
+    .filter((t) => 
+      !busqueda || 
+      t.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
+      (t.carpeta && t.carpeta.toLowerCase().includes(busqueda.toLowerCase()))
+    );
 
   return (
     <div className="p-4 w-full max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">Lista de tareas</h1>
 
       <h2 className="text-lg font-semibold mb-2">Tareas pendientes</h2>
 
@@ -241,7 +257,7 @@ export default function ListaDeTareas({ carpetaFiltrada }: { carpetaFiltrada: st
       </ul>
 
       <ListaTareasCompletadas
-        tareas={completadas}
+        tareas={tareasCompletadasFiltradas}
         onEditar={editarTareaCompletada}
         onReactivar={reenviarATareasPendientes}
         onBorrar={borrarTareaCompletada}
