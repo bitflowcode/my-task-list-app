@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import {
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
-  const fetchUserProfile = async (uid: string) => {
+  const fetchUserProfile = useCallback(async (uid: string) => {
     const userDoc = await getDoc(doc(db, "usuarios", uid));
     if (userDoc.exists()) {
       setUserProfile(userDoc.data() as UserProfile);
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user.displayName || user.email || ""
       );
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [fetchUserProfile]);
 
   const createUserProfile = async (uid: string, email: string, nombre: string) => {
     const userProfile: UserProfile = {

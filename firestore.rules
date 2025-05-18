@@ -12,30 +12,30 @@ service cloud.firestore {
     }
 
     match /tareas/{tareaId} {
-      allow read: if request.auth != null && (
-        isOwner(resource.data) ||
-        (request.method == 'create' && isOwner(request.resource.data))
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
+        resource == null || 
+        resource.data.userId == request.auth.uid
       );
-      allow create: if request.auth != null && isOwner(request.resource.data);
-      allow update, delete: if request.auth != null && isOwner(resource.data);
     }
 
     match /completadas/{tareaId} {
-      allow read: if request.auth != null && (
-        isOwner(resource.data) ||
-        (request.method == 'create' && isOwner(request.resource.data))
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
+        resource == null || 
+        resource.data.userId == request.auth.uid
       );
-      allow create: if request.auth != null && isOwner(request.resource.data);
-      allow update, delete: if request.auth != null && isOwner(resource.data);
     }
 
     match /carpetas/{carpetaId} {
-      allow read: if request.auth != null && (
-        isOwner(resource.data) ||
-        (request.method == 'create' && isOwner(request.resource.data))
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
+        resource == null || 
+        resource.data.userId == request.auth.uid
       );
-      allow create: if request.auth != null && isOwner(request.resource.data);
-      allow update, delete: if request.auth != null && isOwner(resource.data);
     }
   }
 } 

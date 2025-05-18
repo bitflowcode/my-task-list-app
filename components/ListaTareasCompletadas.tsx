@@ -36,7 +36,7 @@ export default function ListaTareasCompletadas({ tareas, onEditar, onReactivar, 
   };
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 mb-8">
       <h2 className="text-lg font-semibold text-gray-600">
         Completadas ({tareas.length})
       </h2>
@@ -54,9 +54,26 @@ export default function ListaTareasCompletadas({ tareas, onEditar, onReactivar, 
                 onKeyDown={(e) => {
                   if (e.key === "Enter") guardarEdicion();
                 }}
+                autoFocus
               />
             ) : (
-              <span>✔️ {tarea.titulo}</span>
+              <div className="flex-1">
+                <span>✔️ {tarea.titulo}</span>
+                {tarea.carpeta && (
+                  <div className="text-xs text-blue-500 mt-1">
+                    Carpeta: {tarea.carpeta}
+                  </div>
+                )}
+                {tarea.fechaCompletada && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Completada: {new Date(tarea.fechaCompletada).toLocaleDateString('es-ES', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    })}
+                  </div>
+                )}
+              </div>
             )}
             <div className="flex items-center gap-2 ml-4">
               {modoEdicionId === tarea.id ? (

@@ -12,18 +12,23 @@ import {
   orderBy,
   updateDoc,
   getDocs,
-  where
+  where,
+  writeBatch,
+  limit
 } from "firebase/firestore";
 import { useAuth } from "../components/AuthProvider";
 import FormularioTarea from "./FormularioTarea";
 import TareaItem from "./TareaItem";
 import ListaTareasCompletadas from "./ListaTareasCompletadas";
+import OrdenamientoTareas from './OrdenamientoTareas';
+import ListaTareasArrastrable from './ListaTareasArrastrable';
 
 type Tarea = {
   id: string;
   titulo: string;
   fechaLimite?: string | null;
   carpeta?: string;
+  orden: number;
 };
 
 type TareaCompletada = Tarea & {
@@ -35,11 +40,14 @@ type Props = {
   busqueda: string;
 };
 
+type TipoOrdenamiento = 'orden' | 'alfabetico' | 'fecha';
+
 export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [completadas, setCompletadas] = useState<TareaCompletada[]>([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [carpetas, setCarpetas] = useState<string[]>([]);
+  const [tipoOrdenamiento, setTipoOrdenamiento] = useState<TipoOrdenamiento>('orden');
 
   const { user } = useAuth();
 
@@ -95,55 +103,117 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
   }, [user]);
 
   useEffect(() => {
-    const qTareas = query(
-      collection(db, "tareas"),
-      where("userId", "==", user?.uid),
-      orderBy("titulo")
-    );
-    const unsubTareas = onSnapshot(qTareas, (snapshot) => {
-      const nuevasTareas = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        titulo: doc.data().titulo,
-        fechaLimite: doc.data().fechaLimite,
-        carpeta: doc.data().carpeta,
-      }));
-      setTareas(nuevasTareas);
-    });
+    if (!user?.uid) {
+      setTareas([]);
+      setCompletadas([]);
+      return;
+    }
 
-    const qCompletadas = query(
-      collection(db, "completadas"),
-      where("userId", "==", user?.uid),
-      orderBy("fechaCompletada", "desc")
-    );
-    const unsubCompletadas = onSnapshot(qCompletadas, (snapshot) => {
-      const tareasHechas = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        titulo: doc.data().titulo,
-        carpeta: doc.data().carpeta,
-        fechaLimite: doc.data().fechaLimite,
-        fechaCompletada: doc.data().fechaCompletada,
-      }));
-      setCompletadas(tareasHechas);
-    });
+    let unsubTareas: () => void;
+    let unsubCompletadas: () => void;
 
-    actualizarCarpetas();
+    const iniciarSuscripciones = async () => {
+      // Cargar carpetas inmediatamente
+      await actualizarCarpetas();
+      
+      // Consulta base para todas las tareas
+      const qTareas = query(
+        collection(db, "tareas"),
+        where("userId", "==", user.uid)
+      );
+
+      unsubTareas = onSnapshot(qTareas, (snapshot) => {
+        const nuevasTareas = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          titulo: doc.data().titulo,
+          fechaLimite: doc.data().fechaLimite,
+          carpeta: doc.data().carpeta,
+          orden: doc.data().orden || 0,
+        }));
+
+        // Ordenar las tareas según el tipo de ordenamiento
+        const tareasOrdenadas = [...nuevasTareas];
+        if (tipoOrdenamiento === 'orden') {
+          tareasOrdenadas.sort((a, b) => (a.orden || 0) - (b.orden || 0));
+        } else if (tipoOrdenamiento === 'alfabetico') {
+          tareasOrdenadas.sort((a, b) => a.titulo.localeCompare(b.titulo));
+        } else {
+          tareasOrdenadas.sort((a, b) => {
+            if (!a.fechaLimite) return 1;
+            if (!b.fechaLimite) return -1;
+            return new Date(a.fechaLimite).getTime() - new Date(b.fechaLimite).getTime();
+          });
+        }
+
+        setTareas(tareasOrdenadas);
+      });
+
+      // Consulta para tareas completadas
+      const qCompletadas = query(
+        collection(db, "completadas"),
+        where("userId", "==", user.uid),
+        orderBy("fechaCompletada", "desc")
+      );
+
+      unsubCompletadas = onSnapshot(qCompletadas, (snapshot) => {
+        const tareasHechas = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          titulo: doc.data().titulo,
+          carpeta: doc.data().carpeta,
+          fechaLimite: doc.data().fechaLimite,
+          fechaCompletada: doc.data().fechaCompletada,
+          orden: doc.data().orden || 0,
+        }));
+        setCompletadas(tareasHechas);
+      });
+    };
+
+    iniciarSuscripciones();
 
     return () => {
-      unsubTareas();
-      unsubCompletadas();
+      if (unsubTareas) unsubTareas();
+      if (unsubCompletadas) unsubCompletadas();
     };
-  }, [user, actualizarCarpetas]);
+  }, [user, tipoOrdenamiento]);
 
   const agregarTarea = async (titulo: string, fechaLimite: string | null, carpeta?: string) => {
     if (titulo.trim() === "") return;
     if (!user?.uid) return;
-    await addDoc(collection(db, "tareas"), {
-      titulo,
-      fechaLimite: fechaLimite || null,
-      carpeta: carpeta || null,
-      userId: user.uid,
-    });
-    actualizarCarpetas();
+
+    try {
+      // En lugar de buscar el orden más alto, obtenemos todas las tareas
+      const qTareas = query(
+        collection(db, "tareas"),
+        where("userId", "==", user.uid)
+      );
+      
+      const snapshot = await getDocs(qTareas);
+      let ordenMasAlto = 0;
+
+      // Encontrar el orden más alto manualmente
+      snapshot.docs.forEach(doc => {
+        const orden = doc.data().orden || 0;
+        if (orden > ordenMasAlto) {
+          ordenMasAlto = orden;
+        }
+      });
+
+      // Agregar la nueva tarea con el siguiente orden
+      const nuevaTarea = {
+        titulo,
+        fechaLimite: fechaLimite || null,
+        carpeta: carpeta || null,
+        userId: user.uid,
+        orden: ordenMasAlto + 1,
+        createdAt: new Date().toISOString()
+      };
+
+      await addDoc(collection(db, "tareas"), nuevaTarea);
+      console.log("Tarea agregada exitosamente con orden:", ordenMasAlto + 1);
+      await actualizarCarpetas();
+    } catch (error) {
+      console.error("Error al agregar tarea:", error);
+    }
   };
 
   const completarTarea = async (id: string) => {
@@ -203,12 +273,32 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
     if (!tarea || !user?.uid) return;
 
     try {
+      // Obtener el orden más alto actual
+      const qTareas = query(
+        collection(db, "tareas"),
+        where("userId", "==", user.uid),
+        orderBy("orden", "desc"),
+        limit(1)
+      );
+      
+      const snapshot = await getDocs(qTareas);
+      let nuevoOrden = 1;
+      
+      if (!snapshot.empty) {
+        const ordenMasAlto = snapshot.docs[0].data().orden || 0;
+        nuevoOrden = ordenMasAlto + 1;
+      }
+
+      // Agregar la tarea con el nuevo orden
       await addDoc(collection(db, "tareas"), {
         titulo: tarea.titulo,
         fechaLimite: tarea.fechaLimite || null,
         carpeta: tarea.carpeta,
         userId: user.uid,
+        orden: nuevoOrden,
+        createdAt: new Date().toISOString()
       });
+
       await deleteDoc(doc(db, "completadas", id));
       await actualizarCarpetas();
     } catch (error) {
@@ -242,25 +332,121 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
       (t.carpeta && t.carpeta.toLowerCase().includes(busqueda.toLowerCase()))
     );
 
+  const reordenarTareas = async (nuevasTareas: Tarea[]) => {
+    if (!user?.uid) return;
+
+    try {
+      console.log("Reordenando tareas...", nuevasTareas);
+      
+      const batch = writeBatch(db);
+      
+      // Asignar nuevos órdenes
+      nuevasTareas.forEach((tarea, index) => {
+        const ref = doc(db, "tareas", tarea.id);
+        batch.update(ref, { 
+          orden: index + 1,
+          userId: user.uid 
+        });
+      });
+
+      await batch.commit();
+      console.log("Tareas reordenadas exitosamente");
+    } catch (error) {
+      console.error("Error al reordenar tareas:", error);
+    }
+  };
+
+  const inicializarOrdenTareas = useCallback(async () => {
+    if (!user?.uid) return;
+
+    try {
+      // Verificar si ya hay tareas con orden
+      const qTareas = query(
+        collection(db, "tareas"),
+        where("userId", "==", user.uid),
+        where("orden", ">=", 0),
+        limit(1)
+      );
+      
+      const snapshot = await getDocs(qTareas);
+      
+      // Si ya hay al menos una tarea con orden, no necesitamos inicializar
+      if (!snapshot.empty) {
+        return;
+      }
+
+      console.log("Inicializando orden para tareas existentes...");
+      
+      // Obtener todas las tareas sin ordenar
+      const qTodasTareas = query(
+        collection(db, "tareas"),
+        where("userId", "==", user.uid)
+      );
+      
+      const snapshotTodas = await getDocs(qTodasTareas);
+      const tareasExistentes = snapshotTodas.docs.map(doc => ({
+        id: doc.id,
+        titulo: doc.data().titulo as string,
+        orden: doc.data().orden as number | undefined
+      }));
+
+      // Ordenar alfabéticamente para asignar orden inicial
+      tareasExistentes.sort((a, b) => a.titulo.localeCompare(b.titulo));
+
+      // Actualizar cada tarea con su nuevo orden
+      const batch = writeBatch(db);
+      
+      tareasExistentes.forEach((tarea, index) => {
+        const ref = doc(db, "tareas", tarea.id);
+        batch.update(ref, { orden: index + 1 });
+      });
+
+      await batch.commit();
+      console.log("Orden inicializado para todas las tareas existentes");
+    } catch (error) {
+      console.error("Error al inicializar orden de tareas:", error);
+    }
+  }, [user]);
+
+  // Llamar a la función cuando el componente se monta
+  useEffect(() => {
+    if (user?.uid) {
+      inicializarOrdenTareas();
+    }
+  }, [user, inicializarOrdenTareas]);
+
   return (
     <div className="p-4 w-full max-w-4xl mx-auto">
-
       <h2 className="text-lg font-semibold mb-2">Tareas pendientes</h2>
 
-      <ul className="space-y-2">
-        {tareasFiltradas.map((tarea, index) => (
-          <TareaItem
-            key={tarea.id}
-            tarea={tarea}
-            index={index}
-            onCompletar={() => completarTarea(tarea.id)}
-            onEditar={editarTarea}
-            onBorrar={() => borrarTarea(tarea.id)}
-            carpetas={carpetas}
-            onActualizarCarpetas={actualizarCarpetas}
-          />
-        ))}
-      </ul>
+      <OrdenamientoTareas onCambioOrdenamiento={setTipoOrdenamiento} />
+
+      {tipoOrdenamiento === 'orden' ? (
+        <ListaTareasArrastrable
+          tareas={tareasFiltradas}
+          onReordenar={reordenarTareas}
+          onCompletar={completarTarea}
+          onEditar={editarTarea}
+          onBorrar={borrarTarea}
+          carpetas={carpetas}
+          onActualizarCarpetas={actualizarCarpetas}
+        />
+      ) : (
+        <ul className="space-y-2">
+          {tareasFiltradas.map((tarea, index) => (
+            <TareaItem
+              key={tarea.id}
+              tarea={tarea}
+              index={index}
+              onCompletar={() => completarTarea(tarea.id)}
+              onEditar={editarTarea}
+              onBorrar={() => borrarTarea(tarea.id)}
+              carpetas={carpetas}
+              onActualizarCarpetas={actualizarCarpetas}
+            />
+          ))}
+        </ul>
+      )}
 
       <ListaTareasCompletadas
         tareas={tareasCompletadasFiltradas}
@@ -269,9 +455,12 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
         onBorrar={borrarTareaCompletada}
       />
 
+      {/* Espacio extra al final para evitar que el botón + tape contenido */}
+      <div className="pb-24"></div>
+
       <button
         onClick={() => setMostrarModal(true)}
-        className="fixed bottom-8 right-8 bg-blue-600 text-white text-3xl w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700"
+        className="fixed bottom-8 right-8 bg-blue-600 text-white text-3xl w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 z-50"
         aria-label="Agregar tarea"
       >
         +

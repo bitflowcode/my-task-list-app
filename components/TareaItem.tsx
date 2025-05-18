@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
 
 type Tarea = {
@@ -27,7 +27,15 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
   const [carpetaEditada, setCarpetaEditada] = useState<string>(tarea.carpeta || "");
   const [mostrarInputNuevaCarpeta, setMostrarInputNuevaCarpeta] = useState(false);
   const [nuevaCarpeta, setNuevaCarpeta] = useState("");
+  const [carpetasDisponibles, setCarpetasDisponibles] = useState<string[]>(carpetas || []);
   const { user } = useAuth();
+
+  // Asegurar que las carpetas se actualicen cuando cambian en las props
+  useEffect(() => {
+    if (carpetas && carpetas.length > 0) {
+      setCarpetasDisponibles(carpetas);
+    }
+  }, [carpetas]);
 
   const agregarNuevaCarpeta = async (nombre: string) => {
     if (nombre.trim() === "") return;
@@ -44,6 +52,13 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
       setCarpetaEditada(nombre);
       setNuevaCarpeta("");
       setMostrarInputNuevaCarpeta(false);
+      
+      // Actualizar las carpetas localmente también
+      const nuevasCarpetas = [...carpetasDisponibles];
+      if (!nuevasCarpetas.includes(nombre)) {
+        nuevasCarpetas.push(nombre);
+        setCarpetasDisponibles(nuevasCarpetas);
+      }
       
       // Notificar al componente padre para actualizar la lista de carpetas
       await onActualizarCarpetas();
@@ -94,7 +109,7 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
               }}
             >
               <option value="">Sin carpeta</option>
-              {carpetas.map((nombre) => (
+              {carpetasDisponibles.map((nombre) => (
                 <option key={nombre} value={nombre}>
                   {nombre}
                 </option>
