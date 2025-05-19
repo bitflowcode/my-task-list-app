@@ -417,7 +417,7 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
 
   return (
     <div className="p-4 w-full max-w-4xl mx-auto">
-      <h2 className="text-lg font-semibold mb-2">Tareas pendientes</h2>
+      <h2 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Tareas pendientes</h2>
 
       <OrdenamientoTareas onCambioOrdenamiento={setTipoOrdenamiento} />
 
@@ -468,14 +468,14 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
 
       {mostrarModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6">
-          <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-8 relative flex flex-col items-center">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl shadow-lg dark:shadow-gray-900 p-8 relative flex flex-col items-center">
             <button
               onClick={() => setMostrarModal(false)}
-              className="absolute top-4 right-6 text-gray-500 text-2xl hover:text-gray-800"
+              className="absolute top-4 right-6 text-gray-500 dark:text-gray-400 text-2xl hover:text-gray-800 dark:hover:text-gray-200"
             >
               ✕
             </button>
-            <h2 className="text-2xl font-semibold mb-6 text-center">Nueva tarea</h2>
+            <h2 className="text-2xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-100">Nueva tarea</h2>
             <FormularioTarea
               onAgregar={(titulo, fechaLimite, carpeta) => {
                 agregarTarea(titulo, fechaLimite, carpeta);

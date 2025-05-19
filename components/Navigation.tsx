@@ -26,11 +26,11 @@ export default function Navigation({
   }, [carpetas]);
 
   return (
-    <nav className="w-full flex justify-center p-4 border-b border-gray-200 mb-4">
+    <nav className="w-full flex justify-center p-4 border-b border-gray-200 dark:border-gray-700 mb-4">
       <div className="relative flex gap-6">
         <button
           onClick={onToggleCalendario}
-          className="text-xl hover:text-blue-600 transition"
+          className="text-xl hover:text-blue-600 dark:hover:text-blue-400 transition"
           title={mostrarCalendario ? "Ver tareas" : "Ver calendario"}
         >
           {mostrarCalendario ? "✅" : "📅"}
@@ -38,7 +38,7 @@ export default function Navigation({
         <div className="relative">
           <button
             onClick={() => setMostrarDropdown(!mostrarDropdown)}
-            className="text-xl hover:text-blue-600 transition"
+            className="text-xl hover:text-blue-600 dark:hover:text-blue-400 transition"
             title="Filtrar por carpeta"
           >
             📂
@@ -57,15 +57,15 @@ export default function Navigation({
                 }
               }}
               key={carpetas.join(",")}
-              className="absolute left-1/2 -translate-x-1/2 mt-2 bg-white border rounded shadow-md text-sm z-50 w-[clamp(200px,50vw,360px)]"
+              className="absolute left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-md dark:shadow-gray-900 text-sm z-50 w-[clamp(200px,50vw,360px)]"
             >
               <div
                 onClick={() => {
                   onSeleccionarCarpeta("");
                   setMostrarDropdown(false);
                 }}
-                className={`px-4 py-2 hover:bg-blue-100 cursor-pointer ${
-                  carpetaSeleccionada === "" ? "bg-blue-50 font-semibold" : ""
+                className={`px-4 py-2 hover:bg-blue-100 dark:hover:bg-blue-800 cursor-pointer ${
+                  carpetaSeleccionada === "" ? "bg-blue-50 dark:bg-blue-900 font-semibold" : ""
                 }`}
               >
                 Todas
@@ -77,8 +77,8 @@ export default function Navigation({
                     onSeleccionarCarpeta(nombre);
                     setMostrarDropdown(false);
                   }}
-                  className={`px-4 py-2 hover:bg-blue-100 cursor-pointer ${
-                    carpetaSeleccionada === nombre ? "bg-blue-50 font-semibold" : ""
+                  className={`px-4 py-2 hover:bg-blue-100 dark:hover:bg-blue-800 cursor-pointer ${
+                    carpetaSeleccionada === nombre ? "bg-blue-50 dark:bg-blue-900 font-semibold" : ""
                   }`}
                 >
                   {nombre}
@@ -92,7 +92,7 @@ export default function Navigation({
         {user ? (
           <button
             onClick={logout}
-            className="text-sm text-gray-600 hover:text-red-600"
+            className="text-sm text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
             title={`Cerrar sesión (${user.displayName || user.email})`}
           >
             Cerrar sesión
@@ -100,7 +100,7 @@ export default function Navigation({
         ) : (
           <button
             onClick={loginWithGoogle}
-            className="text-sm text-gray-600 hover:text-green-600"
+            className="text-sm text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400"
             title="Iniciar sesión con Google"
           >
             Iniciar sesión

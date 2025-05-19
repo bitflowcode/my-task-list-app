@@ -150,17 +150,17 @@ export default function ListaTareasArrastrable({
       </SortableContext>
       
       {/* Overlay visual durante el arrastre */}
-      <DragOverlay
-        adjustScale={true}
+      <DragOverlay 
+        adjustScale={true} 
         dropAnimation={dropAnimationConfig}
       >
         {activeTarea ? (
-          <div className="pointer-events-none bg-white rounded shadow-2xl scale-105 opacity-90 p-3 w-full max-w-md mx-auto">
-            <div className="text-gray-900 font-semibold text-base truncate">
+          <div className="pointer-events-none bg-white dark:bg-gray-800 rounded shadow-2xl dark:shadow-gray-900 scale-105 opacity-90 p-3 w-full max-w-md mx-auto">
+            <div className="text-gray-900 dark:text-gray-100 font-semibold text-base truncate">
               {activeTarea.titulo}
             </div>
             {activeTarea.carpeta && (
-              <div className="text-sm text-gray-500 mt-1 truncate">
+              <div className="text-sm text-gray-500 dark:text-gray-300 mt-1 truncate">
                 Carpeta: {activeTarea.carpeta}
               </div>
             )}

@@ -73,11 +73,11 @@ export default function FormularioTarea({ onAgregar }: Props) {
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col w-full">
-        <label className="text-sm text-gray-700 mb-1">Nueva tarea</label>
+        <label className="text-sm text-gray-700 dark:text-gray-300 mb-1">Nueva tarea</label>
         <input
           type="text"
           placeholder="Escribe aquí tu nueva tarea"
-          className="w-full border rounded px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={nuevaTarea}
           onChange={(e) => setNuevaTarea(e.target.value)}
           onKeyDown={(e) => {
@@ -86,20 +86,20 @@ export default function FormularioTarea({ onAgregar }: Props) {
         />
       </div>
       <div className="flex flex-col w-full">
-        <label className="text-sm text-gray-700 mb-1">Fecha límite</label>
+        <label className="text-sm text-gray-700 dark:text-gray-300 mb-1">Fecha límite</label>
         <input
           type="date"
-          className="w-full border rounded px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={fechaLimite || ""}
           onChange={(e) => setFechaLimite(e.target.value)}
         />
       </div>
       <div className="flex flex-col w-full">
-        <label className="text-sm text-gray-700 mb-1">Carpeta</label>
+        <label className="text-sm text-gray-700 dark:text-gray-300 mb-1">Carpeta</label>
         <select
           value={carpeta}
           onChange={(e) => manejarSeleccionCarpeta(e.target.value)}
-          className="w-full border rounded px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           <option value="">Sin carpeta</option>
           {carpetas.map((nombre) => (
@@ -116,11 +116,11 @@ export default function FormularioTarea({ onAgregar }: Props) {
               placeholder="Nombre de la nueva carpeta"
               value={nuevaCarpeta}
               onChange={(e) => setNuevaCarpeta(e.target.value)}
-              className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="flex-1 border dark:border-gray-600 rounded px-3 py-2 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <button
               onClick={confirmarNuevaCarpeta}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+              className="bg-blue-500 dark:bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-600 dark:hover:bg-blue-700 text-sm"
             >
               Añadir
             </button>
@@ -129,7 +129,7 @@ export default function FormularioTarea({ onAgregar }: Props) {
       </div>
       <button
         onClick={agregar}
-        className="bg-blue-500 text-white w-full py-3 rounded-md text-sm font-semibold hover:bg-blue-600 transition"
+        className="bg-blue-500 dark:bg-blue-600 text-white w-full py-3 rounded-md text-sm font-semibold hover:bg-blue-600 dark:hover:bg-blue-700 transition"
       >
         Agregar
       </button>

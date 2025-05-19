@@ -77,12 +77,12 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
   };
 
   return (
-    <li className="flex justify-between items-center bg-white shadow p-3 rounded">
+    <li className="flex justify-between items-center bg-white dark:bg-gray-800 shadow dark:shadow-gray-700 p-3 rounded">
       <div className="flex-1 pr-2">
         {modoEdicion ? (
           <div className="flex flex-col gap-2">
             <input
-              className="w-full border px-2 py-1 text-sm"
+              className="w-full border dark:border-gray-600 px-2 py-1 text-sm dark:bg-gray-700 dark:text-white"
               value={tituloEditado}
               onChange={(e) => setTituloEditado(e.target.value)}
               onKeyDown={(e) => {
@@ -91,12 +91,12 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
             />
             <input
               type="date"
-              className="w-full border px-2 py-1 text-sm"
+              className="w-full border dark:border-gray-600 px-2 py-1 text-sm dark:bg-gray-700 dark:text-white"
               value={fechaEditada || ""}
               onChange={(e) => setFechaEditada(e.target.value)}
             />
             <select
-              className="w-full border px-2 py-1 text-sm"
+              className="w-full border dark:border-gray-600 px-2 py-1 text-sm dark:bg-gray-700 dark:text-white"
               value={carpetaEditada}
               onChange={(e) => {
                 if (e.target.value === "__nueva__") {
@@ -121,7 +121,7 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
                 <input
                   type="text"
                   placeholder="Nombre de la nueva carpeta"
-                  className="w-full border px-2 py-1 text-sm"
+                  className="w-full border dark:border-gray-600 px-2 py-1 text-sm dark:bg-gray-700 dark:text-white"
                   value={nuevaCarpeta}
                   onChange={(e) => setNuevaCarpeta(e.target.value)}
                   onKeyDown={(e) => {
@@ -132,7 +132,7 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
                 />
                 <button
                   onClick={() => agregarNuevaCarpeta(nuevaCarpeta)}
-                  className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600"
+                  className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-2 py-1 text-sm rounded"
                 >
                   Añadir
                 </button>
@@ -140,10 +140,10 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
             )}
           </div>
         ) : (
-          <span>
+          <span className="text-gray-900 dark:text-white">
             {index + 1}. {tarea.titulo}
             {tarea.fechaLimite && (
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 dark:text-gray-300">
                 Fecha límite: {new Date(tarea.fechaLimite).toLocaleDateString('es-ES', {
                   day: '2-digit',
                   month: '2-digit',
@@ -152,7 +152,7 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
               </div>
             )}
             {tarea.carpeta && (
-              <div className="text-xs text-blue-500">
+              <div className="text-xs text-blue-500 dark:text-blue-300">
                 Carpeta: {tarea.carpeta}
               </div>
             )}
@@ -164,7 +164,7 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
           <>
             <button
               onClick={guardarEdicion}
-              className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 text-sm"
+              className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 py-1 rounded text-sm"
               disabled={tituloEditado.trim() === ""}
             >
               Guardar
@@ -178,7 +178,7 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
                 setMostrarInputNuevaCarpeta(false);
                 setNuevaCarpeta("");
               }}
-              className="text-sm text-gray-500 hover:text-gray-800"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
             >
               Cancelar
             </button>
@@ -187,20 +187,20 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
           <>
             <button
               onClick={() => setModoEdicion(true)}
-              className="text-sm text-gray-500 hover:text-gray-800"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
               title="Editar"
             >
               ✏️
             </button>
             <button
               onClick={onCompletar}
-              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+              className="bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white px-3 py-1 rounded"
             >
               Hecho
             </button>
             <button
               onClick={onBorrar}
-              className="text-gray-500 hover:text-red-600 text-sm"
+              className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 text-sm"
               title="Borrar tarea"
             >
               🗑️

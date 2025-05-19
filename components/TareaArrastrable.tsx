@@ -55,14 +55,14 @@ export function TareaArrastrable(props: Props) {
       ref={setNodeRef} 
       style={style} 
       {...attributes}
-      className={`relative bg-white shadow rounded p-1 mb-2 ${isDragging ? 'ring-2 ring-blue-400 shadow-lg' : ''}`}
+      className={`relative bg-white dark:bg-gray-800 shadow dark:shadow-gray-700 rounded p-1 mb-2 ${isDragging ? 'ring-2 ring-blue-400 dark:ring-blue-500 shadow-lg' : ''}`}
     >
       {/* Área de agarre visible para ayudar a identificar la funcionalidad */}
       <div 
-        className="absolute left-0 top-0 bottom-0 w-8 bg-gray-100 rounded-l flex items-center justify-center cursor-grab active:cursor-grabbing"
+        className="absolute left-0 top-0 bottom-0 w-8 bg-gray-100 dark:bg-gray-700 rounded-l flex items-center justify-center cursor-grab active:cursor-grabbing"
         {...listeners}
       >
-        <span className="text-gray-400">⋮⋮</span>
+        <span className="text-gray-500 dark:text-gray-300">⋮⋮</span>
       </div>
       
       {/* Contenido principal con margen para el área de agarre */}

@@ -47,7 +47,7 @@ export default function CalendarioTareas() {
 
   return (
     <div className="p-4 max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-4">Calendario de tareas</h2>
+      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">Calendario de tareas</h2>
       <Calendar
         onChange={(value) => setFechaSeleccionada(value as Date)}
         value={fechaSeleccionada}
@@ -58,24 +58,27 @@ export default function CalendarioTareas() {
               (d) => d.toDateString() === date.toDateString()
             )
           ) {
-            return "react-calendar__tile--hasTasks !bg-blue-100 !rounded-full";
+            return "react-calendar__tile--hasTasks !bg-blue-100 dark:!bg-blue-800 !rounded-full";
           }
           return null;
         }}
+        className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border dark:border-gray-700 rounded shadow-sm"
       />
       {fechaSeleccionada && (
         <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">
+          <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">
             Tareas para el {fechaSeleccionada.toLocaleDateString()}
           </h3>
           {tareasDelDia.length > 0 ? (
-            <ul className="space-y-2 text-sm text-gray-700">
+            <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
               {tareasDelDia.map((tarea) => (
-                <li key={tarea.id}>• {tarea.titulo}</li>
+                <li key={tarea.id} className="bg-white dark:bg-gray-800 p-2 rounded border dark:border-gray-700">
+                  • {tarea.titulo}
+                </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-500">No hay tareas asignadas para esta fecha.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No hay tareas asignadas para esta fecha.</p>
           )}
         </div>
       )}
