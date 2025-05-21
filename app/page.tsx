@@ -106,7 +106,7 @@ export default function PaginaPrincipal() {
           <input
             type="text"
             placeholder="Buscar tareas..."
-            className="w-full border dark:border-gray-700 rounded-lg pl-10 pr-10 py-2 dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full border dark:border-gray-700 rounded-lg pl-10 pr-10 py-2 dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-dark"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />

@@ -44,11 +44,11 @@ export default function ListaTareasCompletadas({ tareas, onEditar, onReactivar, 
         {tareas.map((tarea) => (
           <li
             key={tarea.id}
-            className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded shadow-sm dark:shadow-gray-700"
+            className="flex justify-between items-center bg-gray-50 dark:bg-card-dark px-3 py-2 rounded shadow-sm dark:shadow-black/20"
           >
             {modoEdicionId === tarea.id ? (
               <input
-                className="flex-1 border dark:border-gray-600 px-2 py-1 text-sm mr-2 dark:bg-gray-700 dark:text-white"
+                className="flex-1 border dark:border-gray-700 px-2 py-1 text-sm mr-2 dark:bg-gray-800 dark:text-white"
                 value={tituloEditado}
                 onChange={(e) => setTituloEditado(e.target.value)}
                 onKeyDown={(e) => {
@@ -79,7 +79,7 @@ export default function ListaTareasCompletadas({ tareas, onEditar, onReactivar, 
               {modoEdicionId === tarea.id ? (
                 <button
                   onClick={guardarEdicion}
-                  className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 py-1 rounded text-xs"
+                  className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs"
                 >
                   Guardar
                 </button>

@@ -14,11 +14,11 @@ module.exports = {
         },
         background: {
           light: '#ffffff',
-          dark: '#121212',
+          dark: '#121212', // Exactamente como se ve en la imagen
         },
         card: {
           light: '#ffffff',
-          dark: '#1e1e1e',
+          dark: '#1e1e1e', // Color para tarjetas en modo oscuro
         },
         text: {
           light: '#1f2937',

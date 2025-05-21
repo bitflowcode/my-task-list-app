@@ -34,7 +34,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-background-dark text-gray-900 dark:text-gray-100`}
       >
         <ThemeProvider>
           <AuthProvider>
