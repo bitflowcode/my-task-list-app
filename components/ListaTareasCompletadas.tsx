@@ -94,10 +94,10 @@ export default function ListaTareasCompletadas({ tareas, onEditar, onReactivar, 
               )}
               <button
                 onClick={() => onReactivar?.(tarea.id)}
-                className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                className="hover:bg-blue-600 dark:hover:bg-blue-700 text-white px-2 py-1 rounded text-base"
                 title="Volver a tareas pendientes"
               >
-                ↩️
+                🔄
               </button>
               <button
                 onClick={() => onBorrar?.(tarea.id)}
