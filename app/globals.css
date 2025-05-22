@@ -1,4 +1,7 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import './styles/utilities-preserve.css';
 
 /* Variables para transiciones suaves */
 :root {

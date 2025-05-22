@@ -174,7 +174,7 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
       if (unsubTareas) unsubTareas();
       if (unsubCompletadas) unsubCompletadas();
     };
-  }, [user, tipoOrdenamiento]);
+  }, [user, tipoOrdenamiento, actualizarCarpetas]);
 
   const agregarTarea = async (titulo: string, fechaLimite: string | null, carpeta?: string) => {
     if (titulo.trim() === "") return;
