@@ -9,6 +9,7 @@ import Navigation from "../components/Navigation";
 import LoginForm from "../components/LoginForm";
 import { useAuth } from "../components/AuthProvider";
 import dynamic from "next/dynamic";
+import SugerenciasTareas from "../components/SugerenciasTareas";
 const AnimacionBienvenida = dynamic(() => import("../components/AnimacionBienvenida"), { ssr: false });
 
 export default function PaginaPrincipal() {
@@ -16,6 +17,7 @@ export default function PaginaPrincipal() {
   const [carpetaSeleccionada, setCarpetaSeleccionada] = useState("");
   const [carpetasConTareas, setCarpetasConTareas] = useState<string[]>([]);
   const [busqueda, setBusqueda] = useState("");
+  const [nuevaTareaSugerida, setNuevaTareaSugerida] = useState("");
   const { user } = useAuth();
 
   useEffect(() => {
@@ -55,6 +57,20 @@ export default function PaginaPrincipal() {
 
     cargarCarpetasDesdeFirestore();
   }, [user]);
+
+  // Manejar la selección de una sugerencia
+  const manejarSeleccionSugerencia = (sugerencia: string) => {
+    setNuevaTareaSugerida(sugerencia);
+    
+    // Mostrar notificación o feedback
+    const notificacion = document.getElementById('notificacion-sugerencia');
+    if (notificacion) {
+      notificacion.classList.remove('hidden');
+      setTimeout(() => {
+        notificacion.classList.add('hidden');
+      }, 3000);
+    }
+  };
 
   if (!user) {
     return (
@@ -132,12 +148,27 @@ export default function PaginaPrincipal() {
         </div>
       </div>
 
+      {/* Notificación de sugerencia añadida */}
+      <div 
+        id="notificacion-sugerencia" 
+        className="hidden mb-4 p-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm rounded-md"
+      >
+        ¡Sugerencia añadida a tu formulario de tareas!
+      </div>
+
+      {/* Mostrar sugerencias de tareas solo cuando no está en modo calendario */}
+      {!mostrarCalendario && (
+        <SugerenciasTareas onSeleccionarSugerencia={manejarSeleccionSugerencia} />
+      )}
+
       {mostrarCalendario ? (
         <CalendarioTareas />
       ) : (
         <ListaDeTareas 
           carpetaFiltrada={carpetaSeleccionada} 
           busqueda={busqueda}
+          sugerenciaTarea={nuevaTareaSugerida}
+          onSugerenciaUsada={() => setNuevaTareaSugerida("")}
         />
       )}
     </div>

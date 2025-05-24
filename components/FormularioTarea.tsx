@@ -1,22 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { db } from "../lib/firebase";
-import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
+import { collection, getDocs, addDoc, query, where, orderBy, limit } from "firebase/firestore";
 import { useAuth } from "./AuthProvider";
+import { categorizarTareaLocal } from "../lib/ai";
 
 type Props = {
   onAgregar: (titulo: string, fechaLimite: string | null, carpeta?: string) => void;
+  tareaSugerida?: string;
 };
 
-export default function FormularioTarea({ onAgregar }: Props) {
+export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
   const { user } = useAuth();
-  const [nuevaTarea, setNuevaTarea] = useState("");
+  const [nuevaTarea, setNuevaTarea] = useState(tareaSugerida || "");
   const [fechaLimite, setFechaLimite] = useState<string | null>(null);
   const [carpeta, setCarpeta] = useState("");
   const [carpetas, setCarpetas] = useState<string[]>([]);
   const [mostrarInputNuevaCarpeta, setMostrarInputNuevaCarpeta] = useState(false);
   const [nuevaCarpeta, setNuevaCarpeta] = useState("");
+  const [sugerenciaCarpeta, setSugerenciaCarpeta] = useState<string | null>(null);
+  const [mostrarSugerencia, setMostrarSugerencia] = useState(false);
 
   useEffect(() => {
     const obtenerCarpetas = async () => {
@@ -29,6 +33,119 @@ export default function FormularioTarea({ onAgregar }: Props) {
     };
     obtenerCarpetas();
   }, [user]);
+
+  // Función para detectar la carpeta cuando se escribe la tarea
+  const detectarCarpeta = useCallback(async (titulo: string) => {
+    // Solo si no se ha seleccionado una carpeta manualmente
+    if (!carpeta && titulo.length > 3) {
+      try {
+        // 1. Buscar tareas similares en el historial
+        if (user?.uid) {
+          console.log("Buscando tareas similares para:", titulo);
+          
+          // Primero buscar en tareas pendientes
+          const qTareas = query(
+            collection(db, "tareas"),
+            where("userId", "==", user.uid)
+          );
+          
+          const snapshotTareas = await getDocs(qTareas);
+          const tareasSimilares = snapshotTareas.docs.filter(doc => {
+            const tituloTarea = doc.data().titulo.toLowerCase();
+            const nuevaTituloLower = titulo.toLowerCase();
+            
+            // Comparar si los títulos son muy similares
+            return tituloTarea.includes(nuevaTituloLower) || 
+                   nuevaTituloLower.includes(tituloTarea) ||
+                   tituloTarea === nuevaTituloLower;
+          });
+          
+          // Luego buscar en tareas completadas
+          const qCompletadas = query(
+            collection(db, "completadas"),
+            where("userId", "==", user.uid),
+            orderBy("fechaCompletada", "desc"),
+            limit(30)
+          );
+          
+          const snapshotCompletadas = await getDocs(qCompletadas);
+          const completadasSimilares = snapshotCompletadas.docs.filter(doc => {
+            const tituloTarea = doc.data().titulo.toLowerCase();
+            const nuevaTituloLower = titulo.toLowerCase();
+            
+            // Comparar si los títulos son muy similares
+            return tituloTarea.includes(nuevaTituloLower) || 
+                   nuevaTituloLower.includes(tituloTarea) ||
+                   tituloTarea === nuevaTituloLower;
+          });
+          
+          // Combinar resultados
+          const todasLasSimilares = [...tareasSimilares, ...completadasSimilares];
+          
+          if (todasLasSimilares.length > 0) {
+            // Encontrar la carpeta más común entre las tareas similares
+            const carpetasUsadas: {[key: string]: number} = {};
+            
+            todasLasSimilares.forEach(doc => {
+              const carpetaTarea = doc.data().carpeta;
+              if (carpetaTarea) {
+                carpetasUsadas[carpetaTarea] = (carpetasUsadas[carpetaTarea] || 0) + 1;
+              }
+            });
+            
+            // Encontrar la carpeta más usada
+            let carpetaMasUsada = null;
+            let maxUso = 0;
+            
+            Object.entries(carpetasUsadas).forEach(([nombreCarpeta, usos]) => {
+              if (usos > maxUso && carpetas.includes(nombreCarpeta)) {
+                carpetaMasUsada = nombreCarpeta;
+                maxUso = usos;
+              }
+            });
+            
+            if (carpetaMasUsada) {
+              console.log(`Sugerencia basada en historial: "${carpetaMasUsada}" (${maxUso} usos similares)`);
+              setSugerenciaCarpeta(carpetaMasUsada);
+              setMostrarSugerencia(true);
+              return;
+            }
+          }
+        }
+        
+        // 2. Si no hay coincidencias, usar el método de palabras clave
+        const categoriaDetectada = categorizarTareaLocal(titulo);
+        if (categoriaDetectada && carpetas.includes(categoriaDetectada)) {
+          console.log(`Sugerencia basada en palabras clave: "${categoriaDetectada}"`);
+          setSugerenciaCarpeta(categoriaDetectada);
+          setMostrarSugerencia(true);
+        } else {
+          setSugerenciaCarpeta(null);
+          setMostrarSugerencia(false);
+        }
+      } catch (error) {
+        console.error("Error al buscar tareas similares:", error);
+        
+        // En caso de error, intentar con el método de palabras clave
+        const categoriaDetectada = categorizarTareaLocal(titulo);
+        if (categoriaDetectada && carpetas.includes(categoriaDetectada)) {
+          setSugerenciaCarpeta(categoriaDetectada);
+          setMostrarSugerencia(true);
+        } else {
+          setSugerenciaCarpeta(null);
+          setMostrarSugerencia(false);
+        }
+      }
+    }
+  }, [carpeta, carpetas, user]);
+
+  // Aplicar la tarea sugerida cuando cambia
+  useEffect(() => {
+    if (tareaSugerida) {
+      setNuevaTarea(tareaSugerida);
+      detectarCarpeta(tareaSugerida);
+    }
+  }, [tareaSugerida, detectarCarpeta]);
 
   const agregar = () => {
     if (!user) return;
@@ -70,6 +187,14 @@ export default function FormularioTarea({ onAgregar }: Props) {
     setMostrarInputNuevaCarpeta(false);
   };
 
+  // Aplicar la sugerencia
+  const aplicarSugerencia = () => {
+    if (sugerenciaCarpeta) {
+      setCarpeta(sugerenciaCarpeta);
+      setMostrarSugerencia(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col w-full">
@@ -79,7 +204,15 @@ export default function FormularioTarea({ onAgregar }: Props) {
           placeholder="Escribe aquí tu nueva tarea"
           className="w-full border dark:border-gray-600 rounded px-4 py-3 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={nuevaTarea}
-          onChange={(e) => setNuevaTarea(e.target.value)}
+          onChange={(e) => {
+            setNuevaTarea(e.target.value);
+            // Usar un setTimeout para evitar demasiadas llamadas a Firestore mientras se escribe
+            if (e.target.value.length > 3) {
+              detectarCarpeta(e.target.value).catch(err => 
+                console.error("Error al procesar detectarCarpeta:", err)
+              );
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") agregar();
           }}
@@ -109,6 +242,27 @@ export default function FormularioTarea({ onAgregar }: Props) {
           ))}
           <option value="__nueva__">+ Crear nueva carpeta...</option>
         </select>
+        {mostrarSugerencia && sugerenciaCarpeta && (
+          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded text-sm">
+            <p>
+              Sugerencia: ¿Quieres añadir esta tarea a la carpeta &quot;{sugerenciaCarpeta}&quot;?
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={aplicarSugerencia}
+                className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+              >
+                Sí, usar esta carpeta
+              </button>
+              <button
+                onClick={() => setMostrarSugerencia(false)}
+                className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded"
+              >
+                No, gracias
+              </button>
+            </div>
+          </div>
+        )}
         {mostrarInputNuevaCarpeta && (
           <div className="mt-2 flex gap-2">
             <input

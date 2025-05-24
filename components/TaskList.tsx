@@ -38,18 +38,32 @@ type TareaCompletada = Tarea & {
 type Props = {
   carpetaFiltrada: string;
   busqueda: string;
+  sugerenciaTarea?: string;
+  onSugerenciaUsada?: () => void;
 };
 
 type TipoOrdenamiento = 'orden' | 'alfabetico' | 'fecha';
 
-export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
+export default function ListaDeTareas({ carpetaFiltrada, busqueda, sugerenciaTarea, onSugerenciaUsada }: Props) {
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [completadas, setCompletadas] = useState<TareaCompletada[]>([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [carpetas, setCarpetas] = useState<string[]>([]);
   const [tipoOrdenamiento, setTipoOrdenamiento] = useState<TipoOrdenamiento>('orden');
+  const [tareaPreseleccionada, setTareaPreseleccionada] = useState("");
 
   const { user } = useAuth();
+
+  // Procesar la sugerencia de tarea cuando cambia
+  useEffect(() => {
+    if (sugerenciaTarea && sugerenciaTarea.trim() !== "") {
+      setTareaPreseleccionada(sugerenciaTarea);
+      setMostrarModal(true);
+      if (onSugerenciaUsada) {
+        onSugerenciaUsada();
+      }
+    }
+  }, [sugerenciaTarea, onSugerenciaUsada]);
 
   const actualizarCarpetas = useCallback(async () => {
     if (!user) {
@@ -417,9 +431,64 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
 
   return (
     <div className="p-4 w-full max-w-4xl mx-auto">
-      <h2 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">Tareas pendientes</h2>
+      <div className="w-full flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          {carpetaFiltrada ? `Tareas en ${carpetaFiltrada}` : "Todas las tareas"}
+        </h2>
+        <div className="flex gap-2">
+          <OrdenamientoTareas 
+            tipoActual={tipoOrdenamiento} 
+            onCambiar={setTipoOrdenamiento} 
+          />
+          <button
+            onClick={() => setMostrarModal(true)}
+            className="fixed bottom-8 right-8 bg-blue-500 dark:bg-blue-600 text-white text-3xl w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-600 dark:hover:bg-blue-700 z-50"
+            aria-label="Agregar tarea"
+          >
+            +
+          </button>
+        </div>
+      </div>
 
-      <OrdenamientoTareas onCambioOrdenamiento={setTipoOrdenamiento} />
+      {mostrarModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Añadir nueva tarea
+              </h3>
+              <button
+                onClick={() => {
+                  setMostrarModal(false);
+                  setTareaPreseleccionada("");
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <FormularioTarea
+              onAgregar={(titulo, fechaLimite, carpeta) => {
+                agregarTarea(titulo, fechaLimite, carpeta);
+                setMostrarModal(false);
+                setTareaPreseleccionada("");
+              }}
+              tareaSugerida={tareaPreseleccionada}
+            />
+          </div>
+        </div>
+      )}
 
       {tipoOrdenamiento === 'orden' ? (
         <ListaTareasArrastrable
@@ -457,34 +526,6 @@ export default function ListaDeTareas({ carpetaFiltrada, busqueda }: Props) {
 
       {/* Espacio extra al final para evitar que el botón + tape contenido */}
       <div className="pb-24"></div>
-
-      <button
-        onClick={() => setMostrarModal(true)}
-        className="fixed bottom-8 right-8 bg-primary-light dark:bg-primary-dark text-white text-3xl w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 dark:hover:bg-blue-600 z-50"
-        aria-label="Agregar tarea"
-      >
-        +
-      </button>
-
-      {mostrarModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6">
-          <div className="bg-white dark:bg-card-dark w-full max-w-md rounded-xl shadow-lg dark:shadow-black/20 p-8 relative flex flex-col items-center">
-            <button
-              onClick={() => setMostrarModal(false)}
-              className="absolute top-4 right-6 text-gray-500 dark:text-gray-400 text-2xl hover:text-gray-800 dark:hover:text-white"
-            >
-              ✕
-            </button>
-            <h2 className="text-2xl font-semibold mb-6 text-center text-gray-800 dark:text-white">Nueva tarea</h2>
-            <FormularioTarea
-              onAgregar={(titulo, fechaLimite, carpeta) => {
-                agregarTarea(titulo, fechaLimite, carpeta);
-                setMostrarModal(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
