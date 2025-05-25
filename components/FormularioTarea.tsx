@@ -5,6 +5,7 @@ import { db } from "../lib/firebase";
 import { collection, getDocs, addDoc, query, where, orderBy, limit } from "firebase/firestore";
 import { useAuth } from "./AuthProvider";
 import { categorizarTareaLocal } from "../lib/ai";
+import GrabadorVoz from "./GrabadorVoz";
 
 type Props = {
   onAgregar: (titulo: string, fechaLimite: string | null, carpeta?: string) => void;
@@ -21,6 +22,7 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
   const [nuevaCarpeta, setNuevaCarpeta] = useState("");
   const [sugerenciaCarpeta, setSugerenciaCarpeta] = useState<string | null>(null);
   const [mostrarSugerencia, setMostrarSugerencia] = useState(false);
+  const [mostrarGrabadorVoz, setMostrarGrabadorVoz] = useState(false);
 
   useEffect(() => {
     const obtenerCarpetas = async () => {
@@ -195,10 +197,57 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
     }
   };
 
+  // Función para manejar el resultado del reconocimiento de voz
+  const manejarResultadoVoz = (resultado: { texto: string; fechaLimite: string | null; carpeta: string | null }) => {
+    setNuevaTarea(resultado.texto);
+    
+    if (resultado.fechaLimite) {
+      setFechaLimite(resultado.fechaLimite);
+    }
+    
+    if (resultado.carpeta && carpetas.includes(resultado.carpeta)) {
+      setCarpeta(resultado.carpeta);
+    } else if (resultado.carpeta) {
+      // Si la carpeta mencionada no existe, preparar para crearla
+      setNuevaCarpeta(resultado.carpeta);
+      setMostrarInputNuevaCarpeta(true);
+    }
+    
+    // Ocultar el grabador después de obtener el resultado
+    setMostrarGrabadorVoz(false);
+  };
+
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col w-full">
-        <label className="text-sm text-gray-700 dark:text-gray-300 mb-1">Nueva tarea</label>
+        <div className="flex justify-between items-center mb-1">
+          <label className="text-sm text-gray-700 dark:text-gray-300">Nueva tarea</label>
+          <button
+            onClick={() => setMostrarGrabadorVoz(!mostrarGrabadorVoz)}
+            className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
+            aria-label="Usar reconocimiento de voz"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              viewBox="0 0 16 16"
+            >
+              <path d="M8 11a3 3 0 0 0 3-3V4a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3z" />
+              <path d="M13 8c0 2.03-1.2 3.8-3 4.58v1.42h-4v-1.42c-1.8-.78-3-2.55-3-4.58h2a3 3 0 0 0 6 0h2z" />
+            </svg>
+            {mostrarGrabadorVoz ? "Ocultar" : "Usar voz"}
+          </button>
+        </div>
+
+        {mostrarGrabadorVoz && (
+          <GrabadorVoz
+            onResultado={manejarResultadoVoz}
+            carpetasDisponibles={carpetas}
+          />
+        )}
+
         <input
           type="text"
           placeholder="Escribe aquí tu nueva tarea"
@@ -218,15 +267,31 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
           }}
         />
       </div>
+      
       <div className="flex flex-col w-full">
         <label className="text-sm text-gray-700 dark:text-gray-300 mb-1">Fecha límite</label>
-        <input
-          type="date"
-          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-base dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-          value={fechaLimite || ""}
-          onChange={(e) => setFechaLimite(e.target.value)}
-        />
+        <div className="relative">
+          <input
+            type="date"
+            placeholder="dd/mm/aaaa"
+            className="w-full border dark:border-gray-600 rounded px-4 py-3 text-base dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none"
+            value={fechaLimite || ""}
+            onChange={(e) => setFechaLimite(e.target.value)}
+          />
+          {!fechaLimite && (
+            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-500 dark:text-gray-400">
+              dd/mm/aaaa
+            </div>
+          )}
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="text-gray-500 dark:text-gray-400" viewBox="0 0 16 16">
+              <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/>
+              <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+            </svg>
+          </div>
+        </div>
       </div>
+      
       <div className="flex flex-col w-full">
         <label className="text-sm text-gray-700 dark:text-gray-300 mb-1">Carpeta</label>
         <select
@@ -242,6 +307,7 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
           ))}
           <option value="__nueva__">+ Crear nueva carpeta...</option>
         </select>
+        
         {mostrarSugerencia && sugerenciaCarpeta && (
           <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded text-sm">
             <p>
@@ -263,6 +329,7 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
             </div>
           </div>
         )}
+        
         {mostrarInputNuevaCarpeta && (
           <div className="mt-2 flex gap-2">
             <input
@@ -281,6 +348,7 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
           </div>
         )}
       </div>
+      
       <button
         onClick={agregar}
         className="bg-blue-500 dark:bg-blue-600 text-white w-full py-3 rounded-md text-sm font-semibold hover:bg-blue-600 dark:hover:bg-blue-700 transition"
