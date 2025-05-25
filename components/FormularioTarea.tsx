@@ -202,7 +202,7 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
         <input
           type="text"
           placeholder="Escribe aquí tu nueva tarea"
-          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-base dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={nuevaTarea}
           onChange={(e) => {
             setNuevaTarea(e.target.value);
@@ -222,7 +222,7 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
         <label className="text-sm text-gray-700 dark:text-gray-300 mb-1">Fecha límite</label>
         <input
           type="date"
-          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-base dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={fechaLimite || ""}
           onChange={(e) => setFechaLimite(e.target.value)}
         />
@@ -232,7 +232,7 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
         <select
           value={carpeta}
           onChange={(e) => manejarSeleccionCarpeta(e.target.value)}
-          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-full border dark:border-gray-600 rounded px-4 py-3 text-base dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
           <option value="">Sin carpeta</option>
           {carpetas.map((nombre) => (
@@ -270,7 +270,7 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
               placeholder="Nombre de la nueva carpeta"
               value={nuevaCarpeta}
               onChange={(e) => setNuevaCarpeta(e.target.value)}
-              className="flex-1 border dark:border-gray-600 rounded px-3 py-2 text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="flex-1 border dark:border-gray-600 rounded px-3 py-2 text-base dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <button
               onClick={confirmarNuevaCarpeta}

@@ -22,7 +22,7 @@ export default function RootLayout({
       <head>
         <title>Mi Lista de Tareas</title>
         <meta name="description" content="Aplicación para gestionar tareas" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />

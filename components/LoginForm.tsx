@@ -2,15 +2,24 @@
 
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
+import { auth } from "../lib/firebase";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  updateProfile
+} from "firebase/auth";
 
 export default function LoginForm() {
-  const { user, loginWithEmail, registerWithEmail, resetPassword, loginWithGoogle } = useAuth();
+  const { user, loginWithEmail, registerWithEmail, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nombre, setNombre] = useState("");
   const [modo, setModo] = useState<"login" | "registro" | "recuperar">("login");
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(false);
 
   if (user) return null;
 
@@ -33,140 +42,221 @@ export default function LoginForm() {
     }
   };
 
+  const iniciarSesion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Por favor ingresa tu email y contraseña");
+      return;
+    }
+
+    setCargando(true);
+    setError("");
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      setError("Email o contraseña incorrectos");
+      console.error(err);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const registrarUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !nombre) {
+      setError("Por favor completa todos los campos");
+      return;
+    }
+
+    setCargando(true);
+    setError("");
+
+    try {
+      const resultado = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(resultado.user, {
+        displayName: nombre
+      });
+    } catch (err) {
+      // Error tipado como objeto de Firebase Auth
+      const firebaseError = err as { code?: string; message?: string };
+      if (firebaseError.code === "auth/email-already-in-use") {
+        setError("Este email ya está registrado");
+      } else if (firebaseError.code === "auth/weak-password") {
+        setError("La contraseña debe tener al menos 6 caracteres");
+      } else {
+        setError("Error al crear la cuenta");
+      }
+      console.error(err);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const iniciarSesionConGoogle = async () => {
+    setCargando(true);
+    setError("");
+
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      setError("Error al iniciar sesión con Google");
+      console.error(err);
+    } finally {
+      setCargando(false);
+    }
+  };
+
   return (
-    <div className="max-w-sm mx-auto mt-6 p-4 border border-gray-200 rounded shadow-sm">
-      <h2 className="text-lg font-semibold mb-4 text-center">
-        {modo === "login" ? "Iniciar sesión" : 
-         modo === "registro" ? "Crear cuenta" : 
-         "Recuperar contraseña"}
-      </h2>
+    <div className="max-w-md mx-auto mt-8 px-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold mb-6 text-center text-gray-800 dark:text-white">
+          {modo === "login" ? "Iniciar sesión" : 
+           modo === "registro" ? "Crear cuenta" : 
+           "Recuperar contraseña"}
+        </h2>
 
-      {error && (
-        <p className="text-red-500 text-sm text-center mb-2">{error}</p>
-      )}
-
-      {mensaje && (
-        <p className="text-green-500 text-sm text-center mb-2">{mensaje}</p>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        {modo === "registro" && (
-          <input
-            type="text"
-            placeholder="Nombre"
-            className="w-full border px-3 py-2 rounded"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            required
-          />
-        )}
-        <input
-          type="email"
-          placeholder="Correo electrónico"
-          className="w-full border px-3 py-2 rounded"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        {modo !== "recuperar" && (
-          <input
-            type="password"
-            placeholder="Contraseña"
-            className="w-full border px-3 py-2 rounded"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+        {error && (
+          <p className="text-red-500 text-sm mb-4">{error}</p>
         )}
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          {modo === "login" ? "Entrar" : 
-           modo === "registro" ? "Registrarse" : 
-           "Enviar instrucciones"}
-        </button>
+        {mensaje && (
+          <p className="text-green-500 text-sm text-center mb-2">{mensaje}</p>
+        )}
 
-        {modo === "login" && (
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+        <form onSubmit={modo === "login" ? handleSubmit : modo === "registro" ? registrarUsuario : iniciarSesion}>
+          {modo === "registro" && (
+            <div className="mb-4">
+              <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nombre
+              </label>
+              <input
+                id="nombre"
+                type="text"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                className="w-full border dark:border-gray-600 rounded px-3 py-2 text-base dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Tu nombre"
+              />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">O</span>
-            </div>
+          )}
+          <div className="mb-4">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border dark:border-gray-600 rounded px-3 py-2 text-base dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="tu@email.com"
+            />
           </div>
-        )}
+
+          <div className="mb-6">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Contraseña
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border dark:border-gray-600 rounded px-3 py-2 text-base dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder={modo === "registro" ? "Crea una contraseña" : "Tu contraseña"}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={cargando}
+            className={`w-full bg-blue-500 text-white rounded-md py-2 px-4 font-medium hover:bg-blue-600 transition duration-200 mb-4 ${
+              cargando ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {cargando
+              ? "Cargando..."
+              : modo === "login" ? "Entrar" : 
+                 modo === "registro" ? "Registrarse" : 
+                 "Enviar instrucciones"}
+          </button>
+        </form>
+
+        <div className="flex items-center my-4">
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+          <span className="mx-4 text-sm text-gray-500 dark:text-gray-400">O</span>
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+        </div>
 
         {modo === "login" && (
           <button
-            type="button"
-            onClick={loginWithGoogle}
-            className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-50"
+            onClick={iniciarSesionConGoogle}
+            disabled={cargando}
+            className="w-full flex justify-center items-center bg-white border border-gray-300 rounded-md py-2 px-4 font-medium text-gray-700 hover:bg-gray-50 transition duration-200"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#EA4335"
+                d="M5.26620003,9.76452941 C6.19878754,6.93863203 8.85444915,4.90909091 12,4.90909091 C13.6909091,4.90909091 15.2181818,5.50909091 16.4181818,6.49090909 L19.9090909,3 C17.7818182,1.14545455 15.0545455,0 12,0 C7.27006974,0 3.1977497,2.69829785 1.23999023,6.65002441 L5.26620003,9.76452941 Z"
               />
               <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+                d="M16.0407269,18.0125889 C14.9509167,18.7163016 13.5660892,19.0909091 12,19.0909091 C8.86648613,19.0909091 6.21911939,17.076871 5.27698177,14.2678769 L1.23746264,17.3349879 C3.19279051,21.2970142 7.26500293,24 12,24 C14.9328362,24 17.7353462,22.9573905 19.834192,20.9995801 L16.0407269,18.0125889 Z"
               />
               <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#4A90E2"
+                d="M19.834192,20.9995801 C22.0291676,18.9520994 23.4545455,15.903663 23.4545455,12 C23.4545455,11.2909091 23.3454545,10.5818182 23.1272727,9.90909091 L12,9.90909091 L12,14.4545455 L18.4363636,14.4545455 C18.1187732,16.013626 17.2662994,17.2212117 16.0407269,18.0125889 L19.834192,20.9995801 Z"
               />
               <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#FBBC05"
+                d="M5.27698177,14.2678769 C5.03832634,13.556323 4.90909091,12.7937589 4.90909091,12 C4.90909091,11.2182781 5.03443647,10.4668121 5.26620003,9.76452941 L1.23999023,6.65002441 C0.43658717,8.26043162 0,10.0753848 0,12 C0,13.9195484 0.444780743,15.7301709 1.23746264,17.3349879 L5.27698177,14.2678769 Z"
               />
             </svg>
             Continuar con Google
           </button>
         )}
-      </form>
 
-      <div className="text-center mt-4 text-sm">
-        {modo === "login" ? (
-          <>
-            ¿No tienes cuenta?{" "}
-            <button
-              onClick={() => setModo("registro")}
-              className="text-blue-600 hover:underline"
-            >
-              Crear una
-            </button>
-            <br />
-            <button
-              onClick={() => setModo("recuperar")}
-              className="text-blue-600 hover:underline mt-2"
-            >
-              ¿Olvidaste tu contraseña?
-            </button>
-          </>
-        ) : modo === "registro" ? (
-          <>
-            ¿Ya tienes cuenta?{" "}
-            <button
-              onClick={() => setModo("login")}
-              className="text-blue-600 hover:underline"
-            >
-              Inicia sesión
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={() => setModo("login")}
-              className="text-blue-600 hover:underline"
-            >
-              Volver al inicio de sesión
-            </button>
-          </>
-        )}
+        <div className="mt-4 text-center">
+          {modo === "login" ? (
+            <>
+              ¿No tienes cuenta?{" "}
+              <button
+                onClick={() => setModo("registro")}
+                className="text-blue-500 hover:underline text-sm font-medium"
+              >
+                Crear una
+              </button>
+              <br />
+              <button
+                onClick={() => setModo("recuperar")}
+                className="text-blue-500 hover:underline text-sm font-medium mt-2"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </>
+          ) : modo === "registro" ? (
+            <>
+              ¿Ya tienes cuenta?{" "}
+              <button
+                onClick={() => setModo("login")}
+                className="text-blue-500 hover:underline text-sm font-medium"
+              >
+                Inicia sesión
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setModo("login")}
+                className="text-blue-500 hover:underline text-sm font-medium"
+              >
+                Volver al inicio de sesión
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
