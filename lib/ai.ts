@@ -2,22 +2,30 @@ import OpenAI from 'openai';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from './firebase';
 
+// Variable para controlar si estamos en el navegador o en el servidor
+const isClient = typeof window !== 'undefined';
+
 // Para la versión gratuita, usamos Ollama (que es local) o Groq (que tiene opciones gratuitas)
 // Alternativa 1: API de OpenAI (de pago)
 let openai: OpenAI | null = null;
 
 export function initializeAI() {
-  // Si tienes una clave de API de OpenAI
-  if (process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
+  // Solo inicializar en el servidor, nunca en el cliente
+  if (!isClient && process.env.OPENAI_API_KEY) {
     openai = new OpenAI({
-      apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-      dangerouslyAllowBrowser: true // Solo para desarrollo
+      apiKey: process.env.OPENAI_API_KEY,
+      // dangerouslyAllowBrowser eliminado para prevenir exposición de la API key
     });
   }
 }
 
-// Categorizar tareas automáticamente
+// Categorizar tareas automáticamente - Ahora solo debe llamarse desde el servidor
 export async function categorizarTarea(titulo: string, descripcion?: string): Promise<string | null> {
+  if (isClient) {
+    console.error("Esta función solo debe ser llamada desde el servidor");
+    return null;
+  }
+  
   if (!openai) {
     console.log("API de IA no configurada");
     return null;
@@ -61,6 +69,7 @@ export async function categorizarTarea(titulo: string, descripcion?: string): Pr
 }
 
 // Versión alternativa que no requiere API key (usando reglas simples)
+// Esta sí puede ejecutarse en el cliente
 export function categorizarTareaLocal(titulo: string): string | null {
   const tituloLower = titulo.toLowerCase();
   

@@ -366,7 +366,7 @@ export default function GrabadorVoz({ onResultado, carpetasDisponibles }: Props)
 
       {escuchando && (
         <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Habla claramente. Di &quot;para hoy&quot;, &quot;el jueves que viene&quot; o menciona una fecha y carpeta.
+          Habla claramente. Di &quot;para hoy escribir&quot;, &quot;el jueves que viene llamar a&quot; o menciona una fecha y carpeta.
         </div>
       )}
 
