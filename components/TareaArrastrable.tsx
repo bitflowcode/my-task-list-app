@@ -43,7 +43,7 @@ export function TareaArrastrable(props: Props) {
     // Transición personalizada para movimientos más suaves
     transition: transition ? 'transform 150ms cubic-bezier(0.2, 0, 0, 1)' : undefined,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : 1,
+    zIndex: isDragging ? 50 : 1,
     // Usar transformaciones con aceleración por hardware
     willChange: isDragging ? 'transform' : 'auto',
     // Agregar una pequeña escala durante el arrastre para mejor feedback visual

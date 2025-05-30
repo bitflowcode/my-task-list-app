@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ModalEditarTareaCompletada from "./ModalEditarTareaCompletada";
 
 type Tarea = {
   id: string;
@@ -18,45 +19,34 @@ type Props = {
 };
 
 export default function ListaTareasCompletadas({ tareas, onEditar, onReactivar, onBorrar }: Props) {
-  const [modoEdicionId, setModoEdicionId] = useState<string | null>(null);
-  const [tituloEditado, setTituloEditado] = useState("");
+  const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+  const [tareaParaEditar, setTareaParaEditar] = useState<Tarea | null>(null);
 
   if (tareas.length === 0) return null;
 
   const activarEdicion = (tarea: Tarea) => {
-    setModoEdicionId(tarea.id);
-    setTituloEditado(tarea.titulo);
+    setTareaParaEditar(tarea);
+    setMostrarModalEdicion(true);
   };
 
-  const guardarEdicion = () => {
-    if (modoEdicionId && onEditar && tituloEditado.trim() !== "") {
-      onEditar(modoEdicionId, tituloEditado);
-      setModoEdicionId(null);
+  const manejarEdicion = (id: string, nuevoTitulo: string) => {
+    if (onEditar) {
+      onEditar(id, nuevoTitulo);
     }
   };
 
   return (
-    <div className="mt-6 mb-8">
-      <h2 className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-        Completadas ({tareas.length})
-      </h2>
-      <ul className="text-sm text-gray-700 dark:text-gray-300 mt-2 space-y-2">
-        {tareas.map((tarea) => (
-          <li
-            key={tarea.id}
-            className="flex justify-between items-center bg-gray-50 dark:bg-card-dark px-3 py-2 rounded shadow-sm dark:shadow-black/20"
-          >
-            {modoEdicionId === tarea.id ? (
-              <input
-                className="flex-1 border dark:border-gray-700 px-2 py-1 text-sm mr-2 dark:bg-gray-800 dark:text-white"
-                value={tituloEditado}
-                onChange={(e) => setTituloEditado(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") guardarEdicion();
-                }}
-                autoFocus
-              />
-            ) : (
+    <>
+      <div className="mt-6 mb-8">
+        <h2 className="text-lg font-semibold text-gray-600 dark:text-gray-400">
+          Completadas ({tareas.length})
+        </h2>
+        <ul className="text-sm text-gray-700 dark:text-gray-300 mt-2 space-y-2">
+          {tareas.map((tarea) => (
+            <li
+              key={tarea.id}
+              className="flex justify-between items-center bg-gray-50 dark:bg-card-dark px-3 py-2 rounded shadow-sm dark:shadow-black/20"
+            >
               <div className="flex-1">
                 <span>✔️ {tarea.titulo}</span>
                 {tarea.carpeta && (
@@ -74,16 +64,7 @@ export default function ListaTareasCompletadas({ tareas, onEditar, onReactivar, 
                   </div>
                 )}
               </div>
-            )}
-            <div className="flex items-center gap-2 ml-4">
-              {modoEdicionId === tarea.id ? (
-                <button
-                  onClick={guardarEdicion}
-                  className="bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs"
-                >
-                  Guardar
-                </button>
-              ) : (
+              <div className="flex items-center gap-2 ml-4">
                 <button
                   onClick={() => activarEdicion(tarea)}
                   className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
@@ -91,25 +72,35 @@ export default function ListaTareasCompletadas({ tareas, onEditar, onReactivar, 
                 >
                   ✏️
                 </button>
-              )}
-              <button
-                onClick={() => onReactivar?.(tarea.id)}
-                className="hover:bg-blue-600 dark:hover:bg-blue-700 text-white px-2 py-1 rounded text-base"
-                title="Volver a tareas pendientes"
-              >
-                🔄
-              </button>
-              <button
-                onClick={() => onBorrar?.(tarea.id)}
-                className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 text-sm"
-                title="Borrar tarea"
-              >
-                🗑️
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+                <button
+                  onClick={() => onReactivar?.(tarea.id)}
+                  className="hover:bg-blue-600 dark:hover:bg-blue-700 text-white px-2 py-1 rounded text-base"
+                  title="Volver a tareas pendientes"
+                >
+                  🔄
+                </button>
+                <button
+                  onClick={() => onBorrar?.(tarea.id)}
+                  className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-500 text-sm"
+                  title="Borrar tarea"
+                >
+                  🗑️
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <ModalEditarTareaCompletada
+        isOpen={mostrarModalEdicion}
+        onClose={() => {
+          setMostrarModalEdicion(false);
+          setTareaParaEditar(null);
+        }}
+        tarea={tareaParaEditar}
+        onEditar={manejarEdicion}
+      />
+    </>
   );
 }

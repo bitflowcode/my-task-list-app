@@ -7,16 +7,32 @@ import { useAuth } from "./AuthProvider";
 import { categorizarTareaLocal } from "../lib/ai";
 import GrabadorVoz from "./GrabadorVoz";
 
-type Props = {
-  onAgregar: (titulo: string, fechaLimite: string | null, carpeta?: string) => void;
-  tareaSugerida?: string;
+type Tarea = {
+  id: string;
+  titulo: string;
+  fechaLimite?: string | null;
+  carpeta?: string;
 };
 
-export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
+type Props = {
+  onAgregar?: (titulo: string, fechaLimite: string | null, carpeta?: string) => void;
+  onEditar?: (id: string, titulo: string, fechaLimite: string | null, carpeta?: string) => void;
+  tareaSugerida?: string;
+  tareaParaEditar?: Tarea; // Nueva prop para edición
+  modoEdicion?: boolean; // Para saber si estamos editando
+};
+
+export default function FormularioTarea({ 
+  onAgregar, 
+  onEditar, 
+  tareaSugerida, 
+  tareaParaEditar, 
+  modoEdicion = false 
+}: Props) {
   const { user } = useAuth();
-  const [nuevaTarea, setNuevaTarea] = useState(tareaSugerida || "");
-  const [fechaLimite, setFechaLimite] = useState<string | null>(null);
-  const [carpeta, setCarpeta] = useState("");
+  const [nuevaTarea, setNuevaTarea] = useState(tareaSugerida || tareaParaEditar?.titulo || "");
+  const [fechaLimite, setFechaLimite] = useState<string | null>(tareaParaEditar?.fechaLimite || null);
+  const [carpeta, setCarpeta] = useState(tareaParaEditar?.carpeta || "");
   const [carpetas, setCarpetas] = useState<string[]>([]);
   const [mostrarInputNuevaCarpeta, setMostrarInputNuevaCarpeta] = useState(false);
   const [nuevaCarpeta, setNuevaCarpeta] = useState("");
@@ -36,10 +52,19 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
     obtenerCarpetas();
   }, [user]);
 
-  // Función para detectar la carpeta cuando se escribe la tarea
+  // Aplicar valores de tarea para editar cuando cambian
+  useEffect(() => {
+    if (tareaParaEditar) {
+      setNuevaTarea(tareaParaEditar.titulo);
+      setFechaLimite(tareaParaEditar.fechaLimite || null);
+      setCarpeta(tareaParaEditar.carpeta || "");
+    }
+  }, [tareaParaEditar]);
+
+  // Función para detectar la carpeta cuando se escribe la tarea (solo en modo creación)
   const detectarCarpeta = useCallback(async (titulo: string) => {
-    // Solo si no se ha seleccionado una carpeta manualmente
-    if (!carpeta && titulo.length > 3) {
+    // Solo detectar carpeta si no estamos en modo edición y no se ha seleccionado una carpeta manualmente
+    if (!modoEdicion && !carpeta && titulo.length > 3) {
       try {
         // 1. Buscar tareas similares en el historial
         if (user?.uid) {
@@ -139,25 +164,31 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
         }
       }
     }
-  }, [carpeta, carpetas, user]);
+  }, [carpeta, carpetas, user, modoEdicion]);
 
-  // Aplicar la tarea sugerida cuando cambia
+  // Aplicar la tarea sugerida cuando cambia (solo en modo creación)
   useEffect(() => {
-    if (tareaSugerida) {
+    if (!modoEdicion && tareaSugerida) {
       setNuevaTarea(tareaSugerida);
       detectarCarpeta(tareaSugerida);
     }
-  }, [tareaSugerida, detectarCarpeta]);
+  }, [tareaSugerida, detectarCarpeta, modoEdicion]);
 
-  const agregar = () => {
+  const manejarSubmit = () => {
     if (!user) return;
     if (nuevaTarea.trim() === "") return;
-    onAgregar(nuevaTarea, fechaLimite, carpeta);
-    setNuevaTarea("");
-    setFechaLimite(null);
-    setCarpeta("");
-    setMostrarInputNuevaCarpeta(false);
-    setNuevaCarpeta("");
+    
+    if (modoEdicion && onEditar && tareaParaEditar) {
+      onEditar(tareaParaEditar.id, nuevaTarea, fechaLimite, carpeta);
+    } else if (onAgregar) {
+      onAgregar(nuevaTarea, fechaLimite, carpeta);
+      // Solo limpiar campos en modo creación
+      setNuevaTarea("");
+      setFechaLimite(null);
+      setCarpeta("");
+      setMostrarInputNuevaCarpeta(false);
+      setNuevaCarpeta("");
+    }
   };
 
   const manejarSeleccionCarpeta = (valor: string) => {
@@ -221,7 +252,9 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col w-full">
         <div className="flex justify-between items-center mb-1">
-          <label className="text-sm text-gray-700 dark:text-gray-300">Nueva tarea</label>
+          <label className="text-sm text-gray-700 dark:text-gray-300">
+            {modoEdicion ? "Editar tarea" : "Nueva tarea"}
+          </label>
           <button
             onClick={() => setMostrarGrabadorVoz(!mostrarGrabadorVoz)}
             className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
@@ -250,20 +283,20 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
 
         <input
           type="text"
-          placeholder="Escribe aquí tu nueva tarea"
+          placeholder={modoEdicion ? "Editar título de la tarea" : "Escribe aquí tu nueva tarea"}
           className="w-full border dark:border-gray-600 rounded px-4 py-3 text-base dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           value={nuevaTarea}
           onChange={(e) => {
             setNuevaTarea(e.target.value);
-            // Usar un setTimeout para evitar demasiadas llamadas a Firestore mientras se escribe
-            if (e.target.value.length > 3) {
+            // Solo detectar carpeta en modo creación
+            if (!modoEdicion && e.target.value.length > 3) {
               detectarCarpeta(e.target.value).catch(err => 
                 console.error("Error al procesar detectarCarpeta:", err)
               );
             }
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") agregar();
+            if (e.key === "Enter") manejarSubmit();
           }}
         />
       </div>
@@ -308,7 +341,7 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
           <option value="__nueva__">+ Crear nueva carpeta...</option>
         </select>
         
-        {mostrarSugerencia && sugerenciaCarpeta && (
+        {mostrarSugerencia && sugerenciaCarpeta && !modoEdicion && (
           <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded text-sm">
             <p>
               Sugerencia: ¿Quieres añadir esta tarea a la carpeta &quot;{sugerenciaCarpeta}&quot;?
@@ -350,10 +383,10 @@ export default function FormularioTarea({ onAgregar, tareaSugerida }: Props) {
       </div>
       
       <button
-        onClick={agregar}
+        onClick={manejarSubmit}
         className="bg-blue-500 dark:bg-blue-600 text-white w-full py-3 rounded-md text-sm font-semibold hover:bg-blue-600 dark:hover:bg-blue-700 transition"
       >
-        Agregar
+        {modoEdicion ? "Guardar cambios" : "Agregar"}
       </button>
     </div>
   );
