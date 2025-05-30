@@ -8,8 +8,10 @@ import {
   collection,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
+  where
 } from "firebase/firestore";
+import { useAuth } from "./AuthProvider";
 
 type Tarea = {
   id: string;
@@ -18,11 +20,22 @@ type Tarea = {
 };
 
 export default function CalendarioTareas() {
+  const { user } = useAuth();
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date | null>(null);
 
   useEffect(() => {
-    const q = query(collection(db, "tareas"), orderBy("fechaLimite"));
+    if (!user?.uid) {
+      setTareas([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, "tareas"), 
+      where("userId", "==", user.uid),
+      orderBy("fechaLimite")
+    );
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const datos = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -33,7 +46,7 @@ export default function CalendarioTareas() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.uid]);
 
   const fechasConTareas = tareas
     .filter(t => t.fechaLimite)
@@ -44,6 +57,15 @@ export default function CalendarioTareas() {
     const fechaTarea = new Date(t.fechaLimite);
     return fechaTarea.toDateString() === fechaSeleccionada.toDateString();
   });
+
+  if (!user) {
+    return (
+      <div className="p-4 max-w-md mx-auto">
+        <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">Calendario de tareas</h2>
+        <p className="text-gray-500 dark:text-gray-400">Inicia sesión para ver tus tareas en el calendario.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 max-w-md mx-auto">
