@@ -26,7 +26,12 @@ export default function TareaItem({ tarea, index, onCompletar, onEditar, onBorra
   const manejarEdicion = async (id: string, nuevoTitulo: string, nuevaFecha?: string | null, nuevaCarpeta?: string) => {
     if (onEditar) {
       await onEditar(id, nuevoTitulo, nuevaFecha, nuevaCarpeta);
-      await onActualizarCarpetas();
+      // El refresco de carpetas no debe bloquear el cierre del modal:
+      // la lista de tareas ya se actualiza por el listener en tiempo real (onSnapshot)
+      // y las carpetas solo cambian al crear/borrar, no al editar.
+      Promise.resolve(onActualizarCarpetas()).catch(err =>
+        console.error("Error al actualizar carpetas tras edición:", err)
+      );
     }
   };
 
