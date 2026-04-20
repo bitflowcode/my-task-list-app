@@ -14,6 +14,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@serwist/next": "^9.5.6",
     "firebase": "^11.6.1",
+    "firebase-admin": "^13.8.0",
     "lottie-react": "^2.4.1",
     "next": "15.3.9",
     "openai": "^4.103.0",
