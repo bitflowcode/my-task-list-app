@@ -1,3 +1,9 @@
+// @ts-nocheck
+// Next.js 15 intenta type-checkear este fichero pese al `exclude` del
+// tsconfig.json y en Vercel falla porque `@capacitor/cli` no está
+// disponible en NODE_ENV=production. Como este archivo solo lo lee el
+// CLI de Capacitor en tu máquina (cap sync, cap open) y nunca se
+// importa desde el código de la app, deshabilitamos el type-check.
 import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
