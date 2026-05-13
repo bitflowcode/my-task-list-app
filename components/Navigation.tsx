@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
+import PerfilUsuario from "./PerfilUsuario";
 
 type Props = {
   mostrarCalendario: boolean;
@@ -19,7 +20,8 @@ export default function Navigation({
   onSeleccionarCarpeta,
 }: Props) {
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
-  const { user, loginWithGoogle, logout } = useAuth();
+  const [mostrarPerfil, setMostrarPerfil] = useState(false);
+  const { user, loginWithGoogle } = useAuth();
 
   useEffect(() => {
     setMostrarDropdown(false);
@@ -91,11 +93,12 @@ export default function Navigation({
       <div className="ml-6 flex items-center">
         {user ? (
           <button
-            onClick={logout}
-            className="text-sm text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
-            title={`Cerrar sesión (${user.displayName || user.email})`}
+            onClick={() => setMostrarPerfil(true)}
+            className="text-xl hover:text-blue-600 dark:hover:text-blue-400 transition"
+            title={`Mi perfil (${user.displayName || user.email})`}
+            aria-label="Abrir mi perfil"
           >
-            Cerrar sesión
+            👤
           </button>
         ) : (
           <button
@@ -107,6 +110,7 @@ export default function Navigation({
           </button>
         )}
       </div>
+      <PerfilUsuario abierto={mostrarPerfil} onCerrar={() => setMostrarPerfil(false)} />
     </nav>
   );
 }
