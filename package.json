@@ -14,16 +14,25 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@serwist/next": "^9.5.6",
     "firebase": "^11.6.1",
-    "firebase-admin": "^13.8.0",
+    "firebase-admin": "^13.9.0",
     "lottie-react": "^2.4.1",
-    "next": "^15.5.15",
+    "next": "^15.5.18",
     "openai": "^4.103.0",
     "react": "^19.0.1",
     "react-calendar": "^5.1.0",
     "react-dom": "^19.0.1"
   },
   "overrides": {
-    "protobufjs": ">=7.5.5"
+    "protobufjs": "^8.2.0",
+    "uuid": "^11.1.1",
+    "fast-xml-parser": "^5.8.0",
+    "retry-request": "^8.0.2",
+    "teeny-request": "^10.0.0",
+    "http-proxy-agent": "^7.0.0",
+    "https-proxy-agent": "^7.0.0",
+    "next": {
+      "postcss": "^8.5.14"
+    }
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -32,8 +41,8 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.16",
     "eslint": "^9",
-    "eslint-config-next": "^15.5.15",
-    "postcss": "^8.4.31",
+    "eslint-config-next": "^15.5.18",
+    "postcss": "^8.5.14",
     "serwist": "^9.5.6",
     "tailwindcss": "^3.3.5",
     "typescript": "^5"
