@@ -5,7 +5,12 @@ import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { AuthProvider } from "../components/AuthProvider";
 import ThemeToggle from "../components/ThemeToggle";
+import PaywallGlobal from "../components/PaywallGlobal";
+import Onboarding from "../components/Onboarding";
 import { initializeAI } from "../lib/ai";
+import { inicializarCapacitor } from "../lib/capacitor-init";
+import { inicializarRevenueCat } from "../lib/revenuecat";
+import { inicializarAnalytics } from "../lib/analytics";
 
 export default function RootLayout({
   children,
@@ -13,8 +18,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   useEffect(() => {
-    // Inicializar componentes de IA
     initializeAI();
+    inicializarCapacitor();
+    inicializarRevenueCat();
+    inicializarAnalytics();
   }, []);
 
   return (
@@ -40,6 +47,8 @@ export default function RootLayout({
               <ThemeToggle />
             </header>
             <main className="min-h-screen pt-14 pb-10">{children}</main>
+            <PaywallGlobal />
+            <Onboarding />
           </AuthProvider>
         </ThemeProvider>
       </body>
