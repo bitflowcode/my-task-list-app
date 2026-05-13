@@ -1,3 +1,4 @@
+import path from "node:path";
 import withSerwistInit from "@serwist/next";
 import type { NextConfig } from "next";
 
@@ -7,6 +8,8 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV === "development",
 });
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  outputFileTracingRoot: path.join(__dirname),
+};
 
 export default withSerwist(nextConfig);

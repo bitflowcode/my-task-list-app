@@ -63,3 +63,6 @@ next-env.d.ts
 # Serwist (generated service worker)
 public/sw*
 public/swe-worker*
+
+# Documentación interna (solo local)
+/docs/publicacion/

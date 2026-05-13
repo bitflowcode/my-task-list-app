@@ -54,6 +54,16 @@ La app ofrece creación de tareas por voz en modo híbrido:
    llamada falla, el cliente degrada a un parser local basado en expresiones
    regulares (100% offline).
 
+> **Nota sobre zonas horarias**: el parseo de expresiones relativas
+> ("el viernes", "mañana", etc.) usa `Europe/Madrid` como zona horaria de
+> referencia (constante `ZONA_HORARIA_USUARIO` en
+> [app/api/voz/parsear/route.ts](app/api/voz/parsear/route.ts)). El
+> servidor pre-calcula el calendario de los próximos 14 días en esa zona y
+> lo inyecta en el prompt, para evitar errores aritméticos del modelo. Si
+> en el futuro se publica la app para usuarios fuera de España, la zona
+> horaria debería enviarse desde el cliente según la ubicación del
+> dispositivo (`Intl.DateTimeFormat().resolvedOptions().timeZone`).
+
 ### Endpoints de IA
 
 Todos los endpoints bajo `/api/` requieren un Firebase ID token en el header
@@ -87,10 +97,89 @@ límite sea efectivo globalmente.
 - **Validación de inputs**: tamaño máximo de audio (1 MB), tipos MIME
   permitidos, longitud máxima de texto (2000 chars) y de carpetas (60 chars).
 
+## Monetización y cuotas
+
+- **Tiers**: `free` y `premium`. El documento `suscripciones/{uid}` guarda el
+  estado (gestionado por el webhook de RevenueCat en `/api/revenuecat/webhook`).
+  El usuario solo tiene permiso de lectura sobre el suyo.
+- **Cuotas mensuales persistentes**: la colección `cuotas_uso/{uid}_{YYYYMM}`
+  almacena el consumo de IA del mes. Los endpoints de IA consumen cuota
+  transaccionalmente (`lib/cuotas.ts`). Límites por tier en
+  `LIMITES_TIER` y hard cap global en `HARD_CAP`.
+- **Respuestas 402 / 403**: al exceder la cuota del tier se devuelve 402
+  (indicando `upgradeDisponible`) y al exceder el hard cap se devuelve 403
+  con la cuenta efectivamente bloqueada hasta fin de mes.
+- **Paywall**: `components/Paywall.tsx` se muestra automáticamente al
+  recibir un 402 vía `lib/paywall-bus.ts`. El componente `<RequierePremium>`
+  envuelve funcionalidad premium en cliente.
+
+## Perfil y GDPR
+
+- `components/PerfilUsuario.tsx` (modal accesible desde la barra de navegación):
+  editar nombre, ver miembro desde, ver uso del mes, exportar datos, cerrar
+  sesión y **eliminar cuenta** (doble confirmación con reauth).
+- `/api/cuenta/exportar` (GET): descarga un JSON con todo el perfil, tareas,
+  completadas, carpetas, suscripción y cuotas del usuario.
+- `/api/cuenta/eliminar` (POST): borra en cascada todas las colecciones del
+  usuario y llama `auth.deleteUser()`. Requiere un ID token con `auth_time`
+  reciente (Firebase reauthentication).
+- Páginas legales estáticas: [/privacidad](app/privacidad/page.tsx) y
+  [/terminos](app/terminos/page.tsx), accesibles sin autenticar.
+
+## Notificaciones, widgets, analytics
+
+- **FCM**: `lib/notificaciones.ts` (cliente) + `public/firebase-messaging-sw.js`
+  (SW web) + cron horario `/api/cron/recordatorios` declarado en
+  `vercel.json`. Necesita `CRON_SECRET` y `NEXT_PUBLIC_FCM_VAPID_KEY`. Ver
+  [docs/publicacion/notificaciones.md](docs/publicacion/notificaciones.md).
+- **Widgets iOS/Android**: el endpoint `/api/widgets/tareas-proximas`
+  devuelve hasta 5 tareas próximas para ser consumido por un Widget
+  Extension (WidgetKit) o un AppWidget Glance. Esqueletos Swift/Kotlin en
+  [docs/publicacion/widgets.md](docs/publicacion/widgets.md).
+- **Analytics**: Firebase Analytics + PostHog unificados en
+  `lib/analytics.ts`. Se inicializan desde `app/layout.tsx` y se
+  auto-deshabilitan si no hay claves configuradas.
+- **Onboarding**: `components/Onboarding.tsx` muestra un tutorial de 4
+  slides en el primer login (persistido en `localStorage`).
+
+## App Check
+
+Firebase App Check está integrado tanto en cliente (`lib/firebase.ts` con
+reCAPTCHA v3 en web) como en servidor (`lib/auth-server.ts` →
+`verificarAppCheck`). Controla la aplicación con la variable de entorno
+`APPCHECK_ENFORCE`:
+
+- Sin configurar o `APPCHECK_ENFORCE=0`: modo **monitor**, registra en
+  consola los tokens inválidos pero no bloquea la petición.
+- `APPCHECK_ENFORCE=1`: modo **enforce**, rechaza peticiones sin token o
+  con token inválido con `401`.
+
+Ver guía completa en [docs/publicacion/app-check.md](docs/publicacion/app-check.md).
+
 ## Publicación en tiendas (App Store / Google Play)
 
-Esta es una PWA servida desde Next.js. Para empaquetarla como app nativa
-(Capacitor, TWA, etc.) ten en cuenta:
+Documentación detallada en `docs/publicacion/`:
+
+- [capacitor.md](docs/publicacion/capacitor.md): comandos `cap:add:ios`,
+  `cap:add:android`, permisos, plugins y assets.
+- [iap-productos.md](docs/publicacion/iap-productos.md): creación de
+  productos `premium_monthly` (2,99€) y `premium_yearly` (24,99€) con
+  trial de 7 días en App Store Connect, Google Play Console y RevenueCat.
+- [envio.md](docs/publicacion/envio.md): checklist pre-envío, metadata y
+  proceso de revisión Apple/Google.
+- [app-check.md](docs/publicacion/app-check.md): configuración de
+  reCAPTCHA v3 (web), App Attest (iOS) y Play Integrity (Android).
+- [notificaciones.md](docs/publicacion/notificaciones.md): setup de FCM
+  en web y móvil.
+- [widgets.md](docs/publicacion/widgets.md): widgets de pantalla de
+  inicio con las próximas tareas.
+
+### Requisitos legales
+
+
+
+Esta es una PWA servida desde Next.js empaquetada como app nativa con
+Capacitor:
 
 - **Privacy policy**: obligatoria en ambas tiendas. Debe mencionar explícitamente
   que:
