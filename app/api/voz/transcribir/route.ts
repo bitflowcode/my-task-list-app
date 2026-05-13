@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { guardApi, aplicarHeadersRateLimit } from '../../../../lib/api-guard';
+import { guardApi, aplicarHeadersRateLimit, aplicarHeadersCuota } from '../../../../lib/api-guard';
 import { LIMITES } from '../../../../lib/rate-limit';
 
 export const runtime = 'nodejs';
@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     bucket: 'voz:transcribir',
     limit: LIMITES.TRANSCRIBIR.limit,
     windowMs: LIMITES.TRANSCRIBIR.windowMs,
+    recursoCuota: 'whisper',
   });
   if (!guard.ok) return guard.response;
 
@@ -97,7 +98,9 @@ export async function POST(request: NextRequest) {
         : (transcripcion as { text?: string }).text || '';
 
     const resp = NextResponse.json({ texto: texto.trim() });
-    return aplicarHeadersRateLimit(resp, guard.rateLimit);
+    aplicarHeadersRateLimit(resp, guard.rateLimit);
+    if (guard.cuota) aplicarHeadersCuota(resp, guard.cuota);
+    return resp;
   } catch (error) {
     console.error('Error al transcribir audio:', error);
     return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { guardApi, aplicarHeadersRateLimit } from '../../../lib/api-guard';
+import { guardApi, aplicarHeadersRateLimit, aplicarHeadersCuota } from '../../../lib/api-guard';
 import { LIMITES } from '../../../lib/rate-limit';
 
 export const runtime = 'nodejs';
@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
     bucket: 'categorizar',
     limit: LIMITES.CATEGORIZAR.limit,
     windowMs: LIMITES.CATEGORIZAR.windowMs,
+    recursoCuota: 'categorizacion',
   });
   if (!guard.ok) return guard.response;
 
@@ -72,6 +73,28 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // Moderación (fail-open si falla la red)
+    try {
+      const contenidoModerar = [titulo, typeof descripcion === 'string' ? descripcion : '']
+        .filter(Boolean)
+        .join(' \n ');
+      const moderacion = await openai.moderations.create({
+        model: 'omni-moderation-latest',
+        input: contenidoModerar,
+      });
+      if (moderacion.results?.[0]?.flagged) {
+        return NextResponse.json(
+          {
+            error: 'El contenido incluye texto no permitido y no puede categorizarse.',
+            motivo: 'contenido_no_permitido',
+          },
+          { status: 400 }
+        );
+      }
+    } catch (err) {
+      console.warn('Moderación no disponible, continuando:', err);
+    }
+
     const prompt = `Título de la tarea: ${titulo}
 ${typeof descripcion === 'string' && descripcion.trim() ? `Descripción: ${descripcion}` : ''}
 
@@ -95,7 +118,9 @@ Responde solo con el nombre de la carpeta.`;
     const resp = NextResponse.json({
       carpeta: sugerencia && carpetas.includes(sugerencia) ? sugerencia : null,
     });
-    return aplicarHeadersRateLimit(resp, guard.rateLimit);
+    aplicarHeadersRateLimit(resp, guard.rateLimit);
+    if (guard.cuota) aplicarHeadersCuota(resp, guard.cuota);
+    return resp;
   } catch (error) {
     console.error('Error al categorizar la tarea:', error);
     return NextResponse.json({ error: 'Error al procesar la solicitud' }, { status: 500 });

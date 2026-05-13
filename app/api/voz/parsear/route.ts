@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { guardApi, aplicarHeadersRateLimit } from '../../../../lib/api-guard';
+import { guardApi, aplicarHeadersRateLimit, aplicarHeadersCuota } from '../../../../lib/api-guard';
 import { LIMITES } from '../../../../lib/rate-limit';
 
 export const runtime = 'nodejs';
@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
     bucket: 'voz:parsear',
     limit: LIMITES.PARSEAR.limit,
     windowMs: LIMITES.PARSEAR.windowMs,
+    recursoCuota: 'parseo',
   });
   if (!guard.ok) return guard.response;
 
@@ -95,6 +96,29 @@ export async function POST(request: NextRequest) {
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    // Moderación: bloqueamos contenido explícito/ilegal antes de enviarlo al LLM.
+    // omni-moderation-latest es gratuito y cubre nuestro culo ante App Store.
+    // Si la moderación falla por un error de red no bloqueamos (fail-open) para no
+    // degradar la experiencia: el riesgo de falso negativo es menor que romper la app.
+    try {
+      const moderacion = await openai.moderations.create({
+        model: 'omni-moderation-latest',
+        input: texto.trim(),
+      });
+      if (moderacion.results?.[0]?.flagged) {
+        return NextResponse.json(
+          {
+            error:
+              'El texto dictado contiene contenido no permitido. Reformúlalo y vuelve a intentarlo.',
+            motivo: 'contenido_no_permitido',
+          },
+          { status: 400 }
+        );
+      }
+    } catch (err) {
+      console.warn('Moderación no disponible, continuando con el parseo:', err);
+    }
 
     const hoy = new Date();
     const baseHoy = obtenerFechaEnZonaHoraria(hoy, ZONA_HORARIA_USUARIO);
@@ -222,7 +246,9 @@ ${texto.trim()}
     }
 
     const resp = NextResponse.json({ titulo, fechaLimite, carpeta });
-    return aplicarHeadersRateLimit(resp, guard.rateLimit);
+    aplicarHeadersRateLimit(resp, guard.rateLimit);
+    if (guard.cuota) aplicarHeadersCuota(resp, guard.cuota);
+    return resp;
   } catch (error) {
     console.error('Error al parsear texto de voz:', error);
     return NextResponse.json({ error: 'Error al procesar la solicitud' }, { status: 500 });

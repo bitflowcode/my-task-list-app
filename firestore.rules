@@ -93,5 +93,23 @@ service cloud.firestore {
 
       allow delete: if isOwner(resource.data);
     }
+
+    // --- Suscripciones ---
+    // Doc id = uid. Solo el propio usuario puede leer la suya (para saber si es premium).
+    // Escritura SOLO desde el Admin SDK (webhook de RevenueCat). El cliente NO puede
+    // auto-otorgarse premium bajo ningún concepto.
+    match /suscripciones/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // --- Cuotas mensuales de uso de IA ---
+    // Doc id = `${uid}_${YYYYMM}`. El usuario puede leerlas para mostrar consumo
+    // en su perfil. Escritura SOLO desde el Admin SDK dentro de transacciones
+    // verificadas en el servidor (lib/cuotas.ts).
+    match /cuotas_uso/{docId} {
+      allow read: if isSignedIn() && docId.matches(request.auth.uid + '_[0-9]{6}');
+      allow write: if false;
+    }
   }
 }
