@@ -3,30 +3,46 @@
 const EVENTO = "app:paywall-open";
 
 /**
- * Dispara la apertura del paywall desde cualquier parte de la app.
- * Útil al recibir un 402 de un endpoint IA: el handler del fetch puede
- * invocar esto sin necesidad de pasar props por media app.
+ * Datos que viajan en el evento del paywall. El servidor (402)
+ * los rellena todos; cuando se abre manualmente (ej. al pulsar
+ * "Mejora a Premium") basta con `motivo`.
  */
-export function abrirPaywall(motivo?: string): void {
+export type PayloadPaywall = {
+  motivo?: string;
+  recurso?: "whisper" | "parseo" | "categorizacion";
+  tier?: "free" | "premium";
+  limite?: number;
+  mensaje?: string;
+};
+
+/**
+ * Dispara la apertura del paywall. Acepta string (legacy) o
+ * un PayloadPaywall completo.
+ */
+export function abrirPaywall(arg?: string | PayloadPaywall): void {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent(EVENTO, { detail: { motivo } }));
+  const detail: PayloadPaywall =
+    typeof arg === "string" ? { motivo: arg } : arg ?? {};
+  window.dispatchEvent(new CustomEvent(EVENTO, { detail }));
 }
 
-export function suscribirsePaywall(callback: (motivo?: string) => void): () => void {
+export function suscribirsePaywall(
+  callback: (payload: PayloadPaywall) => void
+): () => void {
   if (typeof window === "undefined") return () => {};
   const handler = (e: Event) => {
-    const custom = e as CustomEvent<{ motivo?: string }>;
-    callback(custom.detail?.motivo);
+    const custom = e as CustomEvent<PayloadPaywall>;
+    callback(custom.detail ?? {});
   };
   window.addEventListener(EVENTO, handler);
   return () => window.removeEventListener(EVENTO, handler);
 }
 
 /**
- * Inspecciona una Response de fetch. Si el estado es 402 (cuota agotada),
- * abre el paywall y lanza un Error con el mensaje devuelto por el servidor.
- * Si es otro error, lanza igualmente con el mensaje correspondiente. Si la
- * respuesta es ok, no hace nada.
+ * Inspecciona una Response de fetch. Si es 402, abre el paywall
+ * con el payload completo del servidor. Si es otro error, lanza
+ * con el mensaje correspondiente. Si la respuesta es ok, no
+ * hace nada.
  */
 export async function manejarErroresApi(resp: Response): Promise<void> {
   if (resp.ok) return;
@@ -34,12 +50,24 @@ export async function manejarErroresApi(resp: Response): Promise<void> {
   try {
     data = await resp.json();
   } catch {
-    // ignoramos si no es JSON
+    // body no JSON: ignoramos
   }
-  const error = typeof data.error === "string" ? data.error : `HTTP ${resp.status}`;
+  const mensaje =
+    typeof data.error === "string" ? data.error : `HTTP ${resp.status}`;
 
   if (resp.status === 402) {
-    abrirPaywall(error);
+    abrirPaywall({
+      motivo: typeof data.motivo === "string" ? data.motivo : undefined,
+      recurso:
+        data.recurso === "whisper" ||
+        data.recurso === "parseo" ||
+        data.recurso === "categorizacion"
+          ? data.recurso
+          : undefined,
+      tier: data.tier === "premium" ? "premium" : "free",
+      limite: typeof data.limite === "number" ? data.limite : undefined,
+      mensaje,
+    });
   }
-  throw new Error(error);
+  throw new Error(mensaje);
 }

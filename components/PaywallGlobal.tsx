@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Paywall from "./Paywall";
 import { suscribirsePaywall } from "../lib/paywall-bus";
+import type { PayloadPaywall } from "../lib/paywall-bus";
 
 /**
  * Monta un Paywall global que escucha el event bus (lib/paywall-bus.ts)
@@ -11,15 +12,15 @@ import { suscribirsePaywall } from "../lib/paywall-bus";
  */
 export default function PaywallGlobal() {
   const [abierto, setAbierto] = useState(false);
-  const [motivo, setMotivo] = useState<string | undefined>(undefined);
+  const [payload, setPayload] = useState<PayloadPaywall | undefined>(undefined);
 
   useEffect(() => {
-    const unsub = suscribirsePaywall(msg => {
-      setMotivo(msg);
+    const unsub = suscribirsePaywall(p => {
+      setPayload(p);
       setAbierto(true);
     });
     return unsub;
   }, []);
 
-  return <Paywall abierto={abierto} onCerrar={() => setAbierto(false)} motivo={motivo} />;
+  return <Paywall abierto={abierto} onCerrar={() => setAbierto(false)} payload={payload} />;
 }

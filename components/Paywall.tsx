@@ -9,10 +9,12 @@ import {
   restaurarCompras,
 } from "../lib/revenuecat";
 
+import type { PayloadPaywall } from "../lib/paywall-bus";
+
 type Props = {
   abierto: boolean;
   onCerrar: () => void;
-  motivo?: string;
+  payload?: PayloadPaywall;
 };
 
 type Paquete = {
@@ -30,7 +32,48 @@ const BENEFICIOS_PREMIUM = [
   "Soporte prioritario",
 ];
 
-export default function Paywall({ abierto, onCerrar, motivo }: Props) {
+const MOTIVOS_LEGIBLES: Record<string, string> = {
+  cuota_tier:
+    "Has agotado tu cuota gratuita de IA este mes. Suscríbete a Premium para uso ilimitado.",
+  hard_cap:
+    "Has alcanzado el máximo absoluto de uso este mes. Tu cuenta queda limitada hasta el día 1 del próximo mes.",
+  funcionalidad_premium:
+    "Esta funcionalidad requiere el plan Premium.",
+  contenido_no_permitido:
+    "El texto contiene material no permitido. Revisa el dictado e inténtalo de nuevo.",
+};
+
+const ETIQUETAS_RECURSO: Record<string, string> = {
+  whisper: "Transcripción de voz",
+  parseo: "Parseo inteligente",
+  categorizacion: "Categorización automática",
+};
+
+/**
+ * Devuelve un mensaje renderizable o null si el payload
+ * no contiene información presentable al usuario. Filtra
+ * motivos cortos de testing/debug como "test".
+ */
+function calcularMensajeMostrable(p?: PayloadPaywall): string | null {
+  if (!p) return null;
+  // 1) Si el servidor ya nos ha dado un mensaje largo y legible, lo usamos.
+  if (p.mensaje && p.mensaje.length >= 20 && p.mensaje.includes(" ")) {
+    return p.mensaje;
+  }
+  // 2) Si tenemos motivo técnico mapeable, lo usamos.
+  if (p.motivo && MOTIVOS_LEGIBLES[p.motivo]) {
+    return MOTIVOS_LEGIBLES[p.motivo];
+  }
+  // 3) Resto: motivo desconocido (p. ej. "test") → ocultar.
+  return null;
+}
+
+export default function Paywall({ abierto, onCerrar, payload }: Props) {
+  const mensajeMostrable = calcularMensajeMostrable(payload);
+  const recursoEtiqueta = payload?.recurso
+    ? ETIQUETAS_RECURSO[payload.recurso]
+    : null;
+
   const [paquetes, setPaquetes] = useState<Paquete[]>([]);
   const [cargando, setCargando] = useState(false);
   const [procesando, setProcesando] = useState(false);
@@ -122,8 +165,13 @@ export default function Paywall({ abierto, onCerrar, motivo }: Props) {
           </button>
         </div>
 
-        {motivo && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{motivo}</p>
+        {(mensajeMostrable || recursoEtiqueta) && (
+          <div className="mb-4 px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-sm rounded">
+            {recursoEtiqueta && (
+              <div className="font-semibold mb-0.5">{recursoEtiqueta}</div>
+            )}
+            {mensajeMostrable && <div>{mensajeMostrable}</div>}
+          </div>
         )}
 
         <ul className="mb-5 space-y-1 text-sm">
